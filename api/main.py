@@ -58,7 +58,7 @@ def search(
     price_min: Optional[float] = Query(None),
     price_max: Optional[float] = Query(None),
     page: int = Query(1, ge=1),
-    size: int = Query(20, ge=1, le=100),
+    page_size: int = Query(20, ge=1, le=100),
 ):
     must_clauses = []
     filter_clauses = []
@@ -102,12 +102,12 @@ def search(
         filter_clauses.append({"range": {"price": {"lte": price_max}}})
 
     query = _build_bool_query(must_clauses, filter_clauses)
-    from_idx = (page - 1) * size
+    from_idx = (page - 1) * page_size
 
     body = {
         "query": query,
         "from": from_idx,
-        "size": size,
+        "size": page_size,
         "sort": [{"date": {"order": "desc"}}, {"_score": {"order": "desc"}}],
         "aggs": {
             "by_breed_spec": {
@@ -208,8 +208,8 @@ def search(
         return {
             "total": total,
             "page": page,
-            "size": size,
-            "pages": (total + size - 1) // size,
+            "size": page_size,
+            "pages": (total + page_size - 1) // page_size,
             "data": hits
         }
     except Exception as e:
