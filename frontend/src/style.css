@@ -572,3 +572,299 @@ body {
   .filter-sidebar { width: 100%; position: static; }
   .sidebar-section { border-radius: var(--radius); }
 }
+
+/* ============================================================
+   P0 ENHANCEMENTS — price highlight, row color, skeleton
+   ============================================================ */
+
+/* === Province color bar === */
+.province-bar-cell {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: inherit;
+}
+
+.province-bar {
+  width: 4px;
+  height: 20px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.breed-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--text) !important;
+}
+
+/* === Price cell highlight === */
+.price-cell {
+  position: relative;
+  transition: background 0.15s;
+}
+
+.price-cell.price-high {
+  background: rgba(220, 38, 38, 0.08) !important;
+}
+.price-cell.price-high .price-value { color: var(--danger) !important; }
+
+.price-cell.price-low {
+  background: rgba(59, 130, 246, 0.08) !important;
+}
+.price-cell.price-low .price-value { color: #3b82f6 !important; }
+
+.price-value { font-weight: 700; }
+
+/* === Price badges === */
+.price-badge {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  vertical-align: middle;
+  font-family: 'DIN Alternate', monospace;
+}
+
+.badge-danger  { background: rgba(220, 38, 38, 0.15); color: var(--danger); }
+.badge-warning { background: rgba(217, 119, 6, 0.15); color: var(--warning); }
+.badge-blue    { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+
+/* === Tax diff badge === */
+.tax-badge {
+  display: block;
+  font-size: 10px;
+  color: #f97316;
+  font-weight: 600;
+  white-space: nowrap;
+  margin-top: 1px;
+}
+
+/* === Stale row (old date > 30 days) === */
+.stale-row td { opacity: 0.55; }
+.stale-date { color: var(--text-3) !important; font-style: italic; }
+
+/* === Skeleton loading === */
+.skeleton-header {
+  display: flex;
+  gap: 0;
+  padding: 11px 14px;
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  border-bottom: 1px solid var(--border);
+}
+
+.skeleton-row {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-light);
+  gap: 12px;
+}
+
+.skeleton-col {
+  height: 14px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  flex-shrink: 0;
+}
+
+.skeleton-footer {
+  height: 48px;
+  border-top: 1px solid var(--border-light);
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* === Toolbar === */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  box-shadow: var(--shadow);
+}
+
+.toolbar-left { display: flex; align-items: center; gap: 8px; }
+
+.toolbar-page {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-left: 8px;
+  padding-left: 8px;
+  border-left: 1px solid var(--border);
+}
+
+.toolbar-right { display: flex; align-items: center; gap: 8px; }
+
+.toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.toolbar-btn:hover {
+  background: var(--surface-2);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* === Column config dropdown === */
+.col-config-wrap { position: relative; }
+
+.col-config-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 200;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  min-width: 140px;
+  overflow: hidden;
+}
+
+.col-config-title {
+  padding: 8px 12px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--surface-2);
+}
+
+.col-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text);
+  transition: background 0.1s;
+}
+
+.col-toggle:hover { background: var(--primary-dim); }
+.col-toggle input { cursor: pointer; accent-color: var(--primary); }
+
+/* === Search history === */
+.search-history {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.history-label {
+  font-size: 10px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  width: 100%;
+}
+
+.history-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 11px;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.history-chip:hover {
+  background: var(--primary-dim);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* === Price presets === */
+.price-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.preset-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.preset-chip:hover, .preset-chip.active {
+  background: var(--primary-dim);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.preset-chip.active { font-weight: 700; }
+
+/* === Table row hover === */
+.data-row:hover { background: var(--primary-dim) !important; }
+.data-row:hover td { opacity: 1 !important; }
+
+/* === Sticky table header === */
+.result-table thead { position: sticky; top: 0; z-index: 3; }
+
+/* === Spec text truncation === */
+.spec-text {
+  display: block;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* === Empty state actions === */
+.empty-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  justify-content: center;
+}
+
+/* === meta accent === */
+.meta-value.accent { color: var(--success) !important; text-shadow: 0 0 8px rgba(5, 150, 105, 0.3); }
+
+/* === Toolbar count bold === */
+.table-count strong { color: var(--primary); font-weight: 700; }
