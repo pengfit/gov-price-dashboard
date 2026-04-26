@@ -61,10 +61,13 @@
       <div class="chart-card">
         <div class="chart-card-header">
           <div class="chart-card-title"><span class="icon">📈</span> 价格走势</div>
-          <select v-model="trendProvince" class="trend-select" @change="loadTrend">
-            <option value="">全国</option>
-            <option v-for="p in overview.by_province" :key="p.province" :value="p.province">{{ p.province }}</option>
-          </select>
+          <CustomSelect
+            v-model="trendProvince"
+            :options="overview.by_province.map(p => ({ key: p.province, count: p.count }))"
+            placeholder="全国"
+            :searchable="true"
+            @change="loadTrend"
+          />
         </div>
         <div id="trendChart"></div>
       </div>
@@ -86,26 +89,34 @@
 
         <div class="search-group">
           <label class="search-label">省份</label>
-          <select class="search-select" v-model="searchProvince" @change="onProvinceChange">
-            <option value="">全部省份</option>
-            <option v-for="p in overview.by_province" :key="p.province" :value="p.province">{{ p.province }}</option>
-          </select>
+          <CustomSelect
+            v-model="searchProvince"
+            :options="overview.by_province.map(p => ({ key: p.province, count: p.count }))"
+            placeholder="全部省份"
+            :searchable="true"
+            @change="onProvinceChange"
+          />
         </div>
 
         <div class="search-group">
           <label class="search-label">城市</label>
-          <select class="search-select" v-model="searchCity" :disabled="!searchProvince">
-            <option value="">全部城市</option>
-            <option v-for="c in filteredCities" :key="c.key" :value="c.key">{{ c.key }} ({{ c.count }})</option>
-          </select>
+          <CustomSelect
+            v-model="searchCity"
+            :options="filteredCities.map(c => ({ key: c.key, count: c.count }))"
+            :disabled="!searchProvince"
+            placeholder="全部城市"
+            :searchable="true"
+          />
         </div>
 
         <div class="search-group">
           <label class="search-label">区县</label>
-          <select class="search-select" v-model="searchCounty">
-            <option value="">全部区县</option>
-            <option v-for="c in filteredCounties" :key="c.key" :value="c.key">{{ c.key }} ({{ c.count }})</option>
-          </select>
+          <CustomSelect
+            v-model="searchCounty"
+            :options="filteredCounties.map(c => ({ key: c.key, count: c.count }))"
+            placeholder="全部区县"
+            :searchable="true"
+          />
         </div>
 
         <div class="search-group">
@@ -206,6 +217,7 @@
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import axios from 'axios'
 import * as echarts from 'echarts'
+import CustomSelect from './components/CustomSelect.vue'
 
 const API = 'http://localhost:5200'
 
