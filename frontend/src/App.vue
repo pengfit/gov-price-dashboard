@@ -699,13 +699,8 @@ async function loadAPI(url) {
 }
 
 async function loadOverview() {
-  const params = new URLSearchParams()
-  if (searchKeyword.value.trim()) params.append('keyword', searchKeyword.value.trim())
-  if (searchProvince.value) params.append('province', searchProvince.value)
-  if (searchCity.value) params.append('city', searchCity.value)
-  if (priceMin.value) params.append('price_min', priceMin.value)
-  if (priceMax.value) params.append('price_max', priceMax.value)
-  const d = await loadAPI(`${API}/stats/overview?${params}`)
+  // 不传搜索过滤条件，获取总览全量数据
+  const d = await loadAPI(`${API}/stats/overview`)
   overview.value = d || { total_docs: 0, total_provinces: 0, total_cities: 0, avg_price: 0, by_province: [] }
 }
 

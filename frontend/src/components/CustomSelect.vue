@@ -73,8 +73,10 @@ function open() {
   searchText.value = ''
   focusedIdx.value = -1
   nextTick(() => {
-    if (props.searchable) searchInput.value?.focus()
-    else {
+    if (props.searchable) {
+      searchInput.value?.focus()
+    } else {
+      // Scroll to current selection
       const idx = filteredOptions.value.findIndex(o => o.key === props.modelValue)
       if (idx >= 0) scrollToIdx(idx)
     }
@@ -84,13 +86,13 @@ function open() {
 function close() {
   isOpen.value = false
   searchText.value = ''
+  focusedIdx.value = -1
 }
 
 function select(opt) {
   emit('update:modelValue', opt.key)
   emit('change', opt.key)
   close()
-  wrapperRef.value?.querySelector('.cs-trigger')?.focus()
 }
 
 function openAndFocus() {
