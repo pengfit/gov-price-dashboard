@@ -454,3 +454,279 @@ def filter_options():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5200)
+
+
+# ============================================================
+# P2 Features
+# ============================================================
+
+@app.get("/api/stats/price-trend")
+def price_trend(
+    keyword: Optional[str] = Query(None),
+    province: Optional[str] = Query(None),
+    city: Optional[str] = Query(None),
+    unit: Optional[str] = Query(None),
+    months: int = Query(12, ge=1, le=36),
+):
+    must_clauses = []
+    filter_clauses = []
+
+    if keyword:
+        kw_len = len(keyword)
+        if kw_len <= 2:
+            must_clauses.append({
+                "bool": {
+                    "should": [
+                        {"term": {"breed.keyword": {"value": keyword, "boost": 15}}},
+                        {"match": {"breed": {"query": keyword, "fuzziness": "AUTO", "boost": 5}}},
+                        {"match": {"spec": {"query": keyword, "fuzziness": "AUTO", "boost": 3}}},
+                    ]
+                }
+            })
+        else:
+            must_clauses.append({
+                "bool": {
+                    "should": [
+                        {"match_phrase": {"breed": {"query": keyword, "boost": 20}}},
+                        {"match": {"breed": {"query": keyword, "operator": "and", "minimum_should_match": "100%", "boost": 10}}},
+                        {"match": {"spec": {"query": keyword, "fuzziness": "AUTO", "boost": 5}}},
+                    ]
+                }
+            })
+    if province:
+        filter_clauses.append({"term": {"province": province}})
+    if city:
+        filter_clauses.append({"term": {"city": city}})
+    if unit:
+        filter_clauses.append({"term": {"unit": unit}})
+
+    query = _build_bool_query(must_clauses, filter_clauses)
+
+    body = {
+        "query": query,
+        "size": 0,
+        "aggs": {
+            "price_over_time": {
+                "date_histogram": {
+                    "field": "date",
+                    "calendar_interval": "month",
+                    "format": "yyyy-MM",
+                    "min_doc_count": 1,
+                    "order": {"_key": "asc"}
+                },
+                "aggs": {
+                    "avg_price": {"avg": {"field": "price"}},
+                    "max_price": {"max": {"field": "price"}},
+                    "min_price": {"min": {"field": "price"}},
+                    "count": {"value_count": {"field": "price"}}
+                }
+            }
+        }
+    }
+    try:
+        result = es.search(index=ES_INDEX, body=body)
+        buckets = result["aggregations"]["price_over_time"]["buckets"]
+        return {
+            "data": [
+                {
+                    "month": b["key_as_string"],
+                    "count": b["count"]["value"],
+                    "avg_price": round(b["avg_price"]["value"], 2) if b["avg_price"]["value"] else None,
+                    "max_price": b["max_price"]["value"] or None,
+                    "min_price": b["min_price"]["value"] or None,
+                }
+                for b in buckets[-months:]
+            ]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/stats/price-distribution")
+def price_distribution(
+    province: Optional[str] = Query(None),
+    city: Optional[str] = Query(None),
+    keyword: Optional[str] = Query(None),
+    unit: Optional[str] = Query(None),
+):
+    must_clauses = []
+    filter_clauses = []
+
+    if keyword:
+        kw_len = len(keyword)
+        if kw_len <= 2:
+            must_clauses.append({
+                "bool": {
+                    "should": [
+                        {"term": {"breed.keyword": {"value": keyword, "boost": 15}}},
+                        {"match": {"breed": {"query": keyword, "fuzziness": "AUTO", "boost": 5}}},
+                        {"match": {"spec": {"query": keyword, "fuzziness": "AUTO", "boost": 3}}},
+                    ]
+                }
+            })
+        else:
+            must_clauses.append({
+                "bool": {
+                    "should": [
+                        {"match_phrase": {"breed": {"query": keyword, "boost": 20}}},
+                        {"match": {"breed": {"query": keyword, "operator": "and", "minimum_should_match": "100%", "boost": 10}}},
+                        {"match": {"spec": {"query": keyword, "fuzziness": "AUTO", "boost": 5}}},
+                    ]
+                }
+            })
+    if province:
+        filter_clauses.append({"term": {"province": province}})
+    if city:
+        filter_clauses.append({"term": {"city": city}})
+    if unit:
+        filter_clauses.append({"term": {"unit": unit}})
+
+    query = _build_bool_query(must_clauses, filter_clauses)
+
+    body = {
+        "query": query,
+        "size": 0,
+        "aggs": {
+            "ranges": {
+                "range": {
+                    "field": "price",
+                    "ranges": [
+                        {"key": "0-500",    "from": 0,     "to": 500},
+                        {"key": "500-2k",   "from": 500,   "to": 2000},
+                        {"key": "2k-5k",    "from": 2000,  "to": 5000},
+                        {"key": "5k-1万",   "from": 5000,  "to": 10000},
+                        {"key": "1万-5万",  "from": 10000, "to": 50000},
+                        {"key": ">5万",     "from": 50000},
+                    ]
+                },
+                "aggs": {
+                    "avg_price": {"avg": {"field": "price"}}
+                }
+            }
+        }
+    }
+    try:
+        result = es.search(index=ES_INDEX, body=body)
+        buckets = result["aggregations"]["ranges"]["buckets"]
+        return {
+            "data": [
+                {
+                    "range": b["key"],
+                    "count": b["doc_count"],
+                    "avg_price": round(b["avg_price"]["value"], 2) if b["avg_price"]["value"] else 0,
+                }
+                for b in buckets
+            ]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/stats/price-change")
+def price_change(
+    keyword: Optional[str] = Query(None),
+    province: Optional[str] = Query(None),
+    city: Optional[str] = Query(None),
+    unit: Optional[str] = Query(None),
+    limit: int = Query(20, ge=1, le=100),
+):
+    """涨跌榜：计算各产品近30天与上月的均价变化"""
+    must_clauses = []
+    filter_clauses = []
+
+    if keyword:
+        kw_len = len(keyword)
+        if kw_len <= 2:
+            must_clauses.append({
+                "bool": {
+                    "should": [
+                        {"term": {"breed.keyword": {"value": keyword, "boost": 15}}},
+                        {"match": {"breed": {"query": keyword, "fuzziness": "AUTO", "boost": 5}}},
+                        {"match": {"spec": {"query": keyword, "fuzziness": "AUTO", "boost": 3}}},
+                    ]
+                }
+            })
+        else:
+            must_clauses.append({
+                "bool": {
+                    "should": [
+                        {"match_phrase": {"breed": {"query": keyword, "boost": 20}}},
+                        {"match": {"breed": {"query": keyword, "operator": "and", "minimum_should_match": "100%", "boost": 10}}},
+                        {"match": {"spec": {"query": keyword, "fuzziness": "AUTO", "boost": 5}}},
+                    ]
+                }
+            })
+    if province:
+        filter_clauses.append({"term": {"province": province}})
+    if city:
+        filter_clauses.append({"term": {"city": city}})
+    if unit:
+        filter_clauses.append({"term": {"unit": unit}})
+
+    query = _build_bool_query(must_clauses, filter_clauses)
+
+    body = {
+        "query": query,
+        "size": 0,
+        "aggs": {
+            "by_breed": {
+                "terms": {
+                    "field": "breed.keyword",
+                    "size": limit * 3,
+                    "order": {"_count": "desc"}
+                },
+                "aggs": {
+                    "last_month": {
+                        "filter": {
+                            "range": {
+                                "date": {
+                                    "gte": "now-1M/M",
+                                    "lte": "now/M"
+                                }
+                            }
+                        },
+                        "aggs": {
+                            "avg_price": {"avg": {"field": "price"}},
+                            "count": {"value_count": {"field": "price"}}
+                        }
+                    },
+                    "prev_month": {
+                        "filter": {
+                            "range": {
+                                "date": {
+                                    "gte": "now-2M/M",
+                                    "lte": "now-1M/M"
+                                }
+                            }
+                        },
+                        "aggs": {
+                            "avg_price": {"avg": {"field": "price"}},
+                            "count": {"value_count": {"field": "price"}}
+                        }
+                    }
+                }
+            }
+        }
+    }
+    try:
+        result = es.search(index=ES_INDEX, body=body)
+        items = []
+        for b in result["aggregations"]["by_breed"]["buckets"]:
+            last = b["last_month"]
+            prev = b["prev_month"]
+            last_avg = last["avg_price"]["value"]
+            prev_avg = prev["avg_price"]["value"]
+            if not last_avg or not prev_avg:
+                continue
+            change = ((last_avg - prev_avg) / prev_avg) * 100
+            items.append({
+                "breed": b["key"],
+                "last_avg_price": round(last_avg, 2),
+                "prev_avg_price": round(prev_avg, 2),
+                "change_pct": round(change, 2),
+                "count": last["count"]["value"],
+            })
+        items.sort(key=lambda x: x["change_pct"], reverse=True)
+        return {"data": items[:limit]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

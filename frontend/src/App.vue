@@ -140,6 +140,11 @@
             </span>
           </div>
           <div class="toolbar-right">
+            <!-- View toggle -->
+            <div class="view-tabs">
+              <button class="view-tab" :class="{ active: !showChartView }" @click="showChartView = false">📋 列表</button>
+              <button class="view-tab" :class="{ active: showChartView }" @click="showChartView = true; loadChartData()">📈 图表</button>
+            </div>
             <!-- Column config -->
             <div class="col-config-wrap" ref="colConfigRef">
               <button class="toolbar-btn" @click="toggleColConfig" title="列配置">
@@ -277,6 +282,42 @@
 
   <!-- Toast -->
   <div v-if="toast.show" class="toast">{{ toast.msg }}</div>
+
+  <!-- =====================================================
+       P2: Chart View
+       ===================================================== -->
+  <div v-if="showChartView" class="chart-view">
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div class="chart-card-title">📉 价格走势（近12月）</div>
+        </div>
+        <div id="trendChart" class="chart-container"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div class="chart-card-title">🍩 价格区间分布</div>
+        </div>
+        <div id="distChart" class="chart-container"></div>
+      </div>
+    </div>
+    <div class="change-boards" v-if="changeData.length">
+      <div class="change-board gainers">
+        <div class="change-board-title">📈 涨幅榜</div>
+        <div class="change-item" v-for="item in topGainers" :key="item.breed">
+          <span class="change-breed">{{ item.breed }}</span>
+          <span class="change-pct up">+{{ item.change_pct }}%</span>
+        </div>
+      </div>
+      <div class="change-board losers">
+        <div class="change-board-title">📉 跌幅榜</div>
+        <div class="change-item" v-for="item in topLosers" :key="item.breed">
+          <span class="change-breed">{{ item.breed }}</span>
+          <span class="change-pct down">{{ item.change_pct }}%</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -658,4 +699,77 @@ onMounted(() => {
     }
   })
 })
+
+// ============================================================
+// P2: Chart Data (uses same filter context as search)
+// ============================================================
+import { markRaw } from 'vue'
+import * as echarts from 'echarts'
+
+const showChartView = ref(false)
+const trendData = ref([])
+const distData = ref([])
+const changeData = ref([])
+
+async function loadChartData() {
+  if (trendData.value.length && distData.value.length) return
+  try {
+    const params = new URLSearchParams()
+    if (searchKeyword.value.trim()) params.append('keyword', searchKeyword.value.trim())
+    if (searchProvince.value) params.append('province', searchProvince.value)
+    if (searchCity.value) params.append('city', searchCity.value)
+    if (priceMin.value) params.append('price_min', priceMin.value)
+    if (priceMax.value) params.append('price_max', priceMax.value)
+    const [trend, dist, change] = await Promise.all([
+      loadAPI(`${API}/stats/price-trend?${params}&months=12`),
+      loadAPI(`${API}/stats/price-distribution?${params}`),
+      loadAPI(`${API}/stats/price-change?${params}&limit=20`),
+    ])
+    trendData.value = (trend.data || []).slice(-12)
+    distData.value = dist.data || []
+    changeData.value = change.data || []
+    await nextTick()
+    renderTrendChart()
+    renderDistChart()
+  } catch (e) {
+    console.warn('chart load error:', e)
+  }
+}
+
+function renderTrendChart() {
+  const el = document.getElementById('trendChart')
+  if (!el || !trendData.value.length) return
+  const chart = markRaw(echarts.init(el))
+  chart.setOption({
+    tooltip: { trigger: 'axis', backgroundColor: '#1a2332', borderColor: '#1e3a5f', textStyle: { color: '#e2e8f0', fontSize: 12 }, formatter: p => `<b>${p[0].name}</b><br/>均价: <b style="color:#3b9eff">¥${p[0].value}</b><br/>数量: <b style="color:#34d399">${p[1]?.value?.toLocaleString() || '-'}</b> 条` },
+    legend: { data: ['均价', '数量'], bottom: 0, textStyle: { color: '#94a3b8', fontSize: 10 }, icon: 'roundRect' },
+    grid: { left: '3%', right: '4%', bottom: '18%', top: '8%', containLabel: true },
+    xAxis: { type: 'category', data: trendData.value.map(d => d.month), axisLabel: { color: '#94a3b8', fontSize: 10 }, axisLine: { lineStyle: { color: '#1e3a5f' } }, axisTick: { show: false } },
+    yAxis: [
+      { name: '均价', nameTextStyle: { color: '#64748b', fontSize: 9 }, type: 'value', axisLabel: { color: '#64748b', fontSize: 9, formatter: v => v >= 1000 ? (v/1000).toFixed(0)+'k' : v }, splitLine: { lineStyle: { color: '#1e3a5f', type: 'dashed' } } },
+      { name: '数量', nameTextStyle: { color: '#64748b', fontSize: 9 }, type: 'value', axisLabel: { color: '#64748b', fontSize: 9 }, splitLine: { show: false } }
+    ],
+    series: [
+      { name: '均价', type: 'line', data: trendData.value.map(d => d.avg_price), smooth: 0.4, color: '#3b9eff', symbol: 'circle', symbolSize: 5, lineStyle: { width: 2 }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(59,158,255,0.25)' }, { offset: 1, color: 'rgba(59,158,255,0)' }]) } },
+      { name: '数量', type: 'bar', data: trendData.value.map(d => d.count), color: 'rgba(52,211,153,0.6)', yAxisIndex: 1, barMaxWidth: 14 }
+    ]
+  }, true)
+  window.addEventListener('resize', () => chart.resize())
+}
+
+function renderDistChart() {
+  const el = document.getElementById('distChart')
+  if (!el || !distData.value.length) return
+  const chart = markRaw(echarts.init(el))
+  const COLORS = ['#3b9eff','#5cdbd3','#34d399','#fbbf24','#f87171','#a78bfa']
+  chart.setOption({
+    tooltip: { trigger: 'item', backgroundColor: '#1a2332', borderColor: '#1e3a5f', textStyle: { color: '#e2e8f0', fontSize: 12 }, formatter: p => `<b>${p.name}</b><br/>数量: <b style="color:#5cdbd3">${p.value.toLocaleString()}</b> 条` },
+    legend: { orient: 'horizontal', bottom: 0, textStyle: { color: '#94a3b8', fontSize: 11 } },
+    series: [{ type: 'pie', radius: ['38%', '68%'], center: ['50%', '45%'], avoidLabelOverlap: true, itemStyle: { borderColor: '#0f172a', borderWidth: 2 }, label: { show: true, formatter: '{b}\n{d}%', fontSize: 10, color: '#94a3b8' }, emphasis: { scale: true, scaleSize: 6 }, data: distData.value.map((d, i) => ({ name: d.range, value: d.count, itemStyle: { color: COLORS[i % 6] } })) }]
+  }, true)
+  chart.resize()
+}
+
+const topGainers = computed(() => (changeData.value || []).filter(x => x.change_pct > 0).slice(0, 10))
+const topLosers = computed(() => (changeData.value || []).filter(x => x.change_pct < 0).sort((a, b) => a.change_pct - b.change_pct).slice(0, 10))
 </script>
