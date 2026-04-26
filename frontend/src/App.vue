@@ -49,15 +49,8 @@
       </div>
     </div>
 
-    <!-- Charts Row 2: Top Products + Price Trend -->
-    <div class="charts-row three-quarters">
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <div class="chart-card-title"><span class="icon">📊</span> 热门建材 TOP20</div>
-          <div class="chart-card-badge">TOP 20</div>
-        </div>
-        <div id="topChart"></div>
-      </div>
+    <!-- Charts Row 2: Price Trend -->
+    <div class="charts-row halves">
       <div class="chart-card">
         <div class="chart-card-header">
           <div class="chart-card-title"><span class="icon">📈</span> 价格走势</div>
@@ -224,7 +217,6 @@ const API = 'http://localhost:5200'
 // === State ===
 const overview = ref({ total_docs: 0, total_provinces: 0, total_cities: 0, avg_price: 0, max_price: 0, min_price: 0, by_province: [] })
 const priceDist = ref([])
-const topProducts = ref([])
 const trendData = ref([])
 
 const trendProvince = ref('')
@@ -252,7 +244,7 @@ const sortDir = ref('asc')
 const toast = ref({ show: false, msg: '' })
 
 // Chart instances
-let distChart, provinceChart, topChart, trendChart
+let distChart, provinceChart, trendChart
 
 // === Computed ===
 const filteredCities = computed(() => {
@@ -380,13 +372,6 @@ async function loadPriceDist() {
   renderDistChart()
 }
 
-async function loadTopProducts() {
-  const data = await loadAPI('/api/stats/top-products?limit=20')
-  topProducts.value = data.data || []
-  await nextTick()
-  renderTopChart()
-}
-
 async function loadTrend() {
   let url = `/api/stats/price-trend?months=12`
   if (trendProvince.value) url += `&province=${encodeURIComponent(trendProvince.value)}`
@@ -469,31 +454,6 @@ function renderProvinceChart() {
   } catch(e) { console.warn('renderProvinceChart error:', e) }
 }
 
-function renderTopChart() {
-  try {
-    const el = document.getElementById('topChart')
-    if (!el) return
-    if (!topChart) topChart = echarts.init(el)
-    const data = topProducts.value
-    if (!data || !data.length) return
-    topChart.setOption({
-      tooltip: { trigger: 'axis', backgroundColor: '#1a2332', borderColor: '#1e3a5f', textStyle: { color: '#e2e8f0', fontSize: 12 }, axisPointer: { type: 'shadow' }, formatter: p => `<b>${p[0].name}</b><br/>数据量: <b style="color:#5cdbd3">${p[0].value.toLocaleString()}</b> 条` },
-      grid: { left: '3%', right: '4%', bottom: '12%', top: '3%', containLabel: true },
-      xAxis: { type: 'category', data: data.map(p => p.breed).reverse(), axisLabel: { rotate: 35, fontSize: 10, interval: 0, color: '#94a3b8' }, axisLine: { lineStyle: { color: '#1e3a5f' } }, axisTick: { show: false } },
-      yAxis: { type: 'value', axisLabel: { color: '#64748b', fontSize: 10 }, splitLine: { lineStyle: { color: '#1e3a5f', type: 'dashed' } } },
-      series: [{
-        type: 'bar',
-        data: data.map((p, i) => ({
-          value: p.count,
-          itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#2a9d8f' }, { offset: 1, color: '#5cdbd3' }]), borderRadius: [3, 3, 0, 0] }
-        })).reverse(),
-        label: { show: true, position: 'top', fontSize: 9, color: '#64748b', formatter: p => p.value >= 1000 ? (p.value/1000).toFixed(0)+'k' : p.value },
-        barMaxWidth: 18
-      }]
-    }, true)
-  } catch(e) { console.warn('renderTopChart error:', e) }
-}
-
 function renderTrendChart() {
   try {
     const el = document.getElementById('trendChart')
@@ -524,11 +484,10 @@ onMounted(async () => {
   await loadOverview()
   await nextTick()
   renderProvinceChart()
-  await Promise.all([loadPriceDist(), loadTopProducts(), loadTrend(), loadCityOptions()])
+  await Promise.all([loadPriceDist(), loadTrend(), loadCityOptions()])
   window.addEventListener('resize', () => {
     distChart?.resize()
     provinceChart?.resize()
-    topChart?.resize()
     trendChart?.resize()
   })
   // Keyboard shortcut: / to focus search
