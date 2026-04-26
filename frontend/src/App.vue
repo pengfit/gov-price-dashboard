@@ -6,7 +6,6 @@
         <div class="header-logo">🏗️</div>
         <div class="header-title">
           <h1>建材价格看板</h1>
-          <span class="subtitle">gov_price_index · {{ overview.total_docs.toLocaleString() }} 条</span>
         </div>
       </div>
       <div class="header-right">
