@@ -108,12 +108,45 @@ def search(
         "query": query,
         "from": from_idx,
         "size": size,
-        "sort": [{"date": {"order": "desc"}}, {"_score": {"order": "desc"}}]
+        "sort": [{"date": {"order": "desc"}}, {"_score": {"order": "desc"}}],
+        "aggs": {
+            "by_breed_spec": {
+                "terms": {
+                    "field": "breed.keyword",
+                    "size": 10000,
+                    "order": {"_count": "desc"}
+                },
+                "aggs": {
+                    "spec_vals": {
+                        "terms": {
+                            "field": "spec.keyword",
+                            "size": 50
+                        },
+                        "aggs": {
+                            "avg_price": {"avg": {"field": "price"}},
+                            "avg_tax_price": {"avg": {"field": "tax_price"}}
+                        }
+                    }
+                }
+            }
+        }
     }
 
     try:
         result = es.search(index=ES_INDEX, body=body)
         total = result["hits"]["total"]["value"]
+
+        # Build breed→spec→avg lookup from aggregation results
+        avg_price_map = {}  # (breed, spec) → avg_price
+        try:
+            for breed_bucket in result["aggregations"]["by_breed_spec"]["buckets"]:
+                breed = breed_bucket["key"]
+                for spec_bucket in breed_bucket["spec_vals"]["buckets"]:
+                    spec = spec_bucket["key"]
+                    avg_price_map[(breed, spec)] = round(spec_bucket["avg_price"]["value"], 2) if spec_bucket["avg_price"]["value"] else 0
+        except Exception:
+            pass
+
         hits = [
             {
                 "id": h["_id"],
@@ -126,6 +159,7 @@ def search(
                 "city": h["_source"].get("city", ""),
                 "county": h["_source"].get("county", ""),
                 "date": h["_source"].get("date", ""),
+                "avg_price": avg_price_map.get((h["_source"].get("breed", ""), h["_source"].get("spec", "")), 0),
             }
             for h in result["hits"]["hits"]
         ]
@@ -158,6 +192,7 @@ def overview(
                     "should": [
                         {"term": {"breed.keyword": {"value": keyword, "boost": 15}}},
                         {"match": {"breed": {"query": keyword, "fuzziness": "AUTO", "boost": 5}}},
+                        {"match": {"spec": {"query": keyword, "fuzziness": "AUTO", "boost": 3}}},
                     ]
                 }
             })
@@ -167,6 +202,7 @@ def overview(
                     "should": [
                         {"match_phrase": {"breed": {"query": keyword, "boost": 20}}},
                         {"match": {"breed": {"query": keyword, "operator": "and", "minimum_should_match": "100%", "boost": 10}}},
+                        {"match": {"spec": {"query": keyword, "fuzziness": "AUTO", "boost": 5}}},
                     ]
                 }
             })
