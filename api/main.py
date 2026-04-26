@@ -147,6 +147,47 @@ def search(
         except Exception:
             pass
 
+        # Build prev_month price lookup for (breed, city, province) → prev_price using composite agg
+        prev_price_map = {}
+        try:
+            prev_query = {
+                "bool": {
+                    "must": query.get("bool", {}).get("must", [{"match_all": {}}]),
+                    "filter": query.get("bool", {}).get("filter", []) + [
+                        {"range": {"date": {"gte": "now-3M/M", "lt": "now-2M/M"}}}
+                    ]
+                }
+            }
+            prev_body = {
+                "query": prev_query,
+                "size": 0,
+                "aggs": {
+                    "by_key": {
+                        "composite": {
+                            "sources": [
+                                {"breed": {"terms": {"field": "breed.keyword"}}},
+                                {"city": {"terms": {"field": "city"}}},
+                                {"province": {"terms": {"field": "province"}}},
+                            ],
+                            "size": 10000
+                        },
+                        "aggs": {
+                            "avg_price": {"avg": {"field": "price"}}
+                        }
+                    }
+                }
+            }
+            prev_result = es.search(index=ES_INDEX, body=prev_body)
+            for bucket in prev_result["aggregations"]["by_key"]["buckets"]:
+                key = bucket["key"]
+                if not key.get("breed"):
+                    continue
+                avg = bucket["avg_price"]["value"]
+                if avg:
+                    prev_price_map[(key["breed"], key["city"], key["province"])] = round(avg, 2)
+        except Exception:
+            pass
+
         hits = [
             {
                 "id": h["_id"],
@@ -160,6 +201,7 @@ def search(
                 "county": h["_source"].get("county", ""),
                 "date": h["_source"].get("date", ""),
                 "avg_price": avg_price_map.get((h["_source"].get("breed", ""), h["_source"].get("spec", "")), 0),
+                "prev_price": prev_price_map.get((h["_source"].get("breed", ""), h["_source"].get("city", ""), h["_source"].get("province", "")), 0),
             }
             for h in result["hits"]["hits"]
         ]
@@ -297,109 +339,6 @@ def top_products(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/stats/price-trend")
-def price_trend(
-    keyword: Optional[str] = Query(None),
-    province: Optional[str] = Query(None),
-    city: Optional[str] = Query(None),
-    unit: Optional[str] = Query(None),
-    months: int = Query(12, ge=1, le=36),
-):
-    must_clauses = []
-    filter_clauses = []
-
-    if keyword:
-        must_clauses.append({"match": {"breed": keyword}})
-    if province:
-        filter_clauses.append({"term": {"province": province}})
-    if city:
-        filter_clauses.append({"term": {"city": city}})
-    if unit:
-        filter_clauses.append({"term": {"unit": unit}})
-
-    query = _build_bool_query(must_clauses, filter_clauses)
-
-    body = {
-        "query": query,
-        "size": 0,
-        "aggs": {
-            "price_over_time": {
-                "date_histogram": {
-                    "field": "date",
-                    "calendar_interval": "month",
-                    "format": "yyyy-MM",
-                    "min_doc_count": 1,
-                    "order": {"_key": "asc"}
-                },
-                "aggs": {
-                    "avg_price": {"avg": {"field": "price"}},
-                    "max_price": {"max": {"field": "price"}},
-                    "min_price": {"min": {"field": "price"}},
-                    "count": {"value_count": {"field": "price"}}
-                }
-            }
-        }
-    }
-    try:
-        result = es.search(index=ES_INDEX, body=body)
-        buckets = result["aggregations"]["price_over_time"]["buckets"]
-        return {
-            "data": [
-                {
-                    "month": b["key_as_string"],
-                    "count": b["count"]["value"],
-                    "avg_price": round(b["avg_price"]["value"], 2) if b["avg_price"]["value"] else None,
-                    "max_price": b["max_price"]["value"] or None,
-                    "min_price": b["min_price"]["value"] or None,
-                }
-                for b in buckets[-months:]
-            ]
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/api/stats/price-distribution")
-def price_distribution(
-    province: Optional[str] = Query(None),
-    city: Optional[str] = Query(None),
-):
-    filter_clauses = []
-    if province:
-        filter_clauses.append({"term": {"province": province}})
-    if city:
-        filter_clauses.append({"term": {"city": city}})
-
-    body = {
-        "query": {"bool": {"filter": filter_clauses}} if filter_clauses else {"match_all": {}},
-        "size": 0,
-        "aggs": {
-            "price_ranges": {
-                "range": {
-                    "field": "price",
-                    "ranges": [
-                        {"key": "0-50", "from": 0, "to": 50},
-                        {"key": "50-100", "from": 50, "to": 100},
-                        {"key": "100-500", "from": 100, "to": 500},
-                        {"key": "500-1000", "from": 500, "to": 1000},
-                        {"key": "1000-5000", "from": 1000, "to": 5000},
-                        {"key": "5000-10000", "from": 5000, "to": 10000},
-                        {"key": "10000+", "from": 10000},
-                    ]
-                }
-            }
-        }
-    }
-    try:
-        result = es.search(index=ES_INDEX, body=body)
-        buckets = result["aggregations"]["price_ranges"]["buckets"]
-        return {
-            "data": [{"range": b["key"], "count": b["doc_count"]} for b in buckets]
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @app.get("/api/filter-options")
 def filter_options():
     try:
@@ -451,12 +390,6 @@ def filter_options():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5200)
-
-
-# ============================================================
 # P2 Features
 # ============================================================
 
@@ -680,8 +613,8 @@ def price_change(
                         "filter": {
                             "range": {
                                 "date": {
-                                    "gte": "now-1M/M",
-                                    "lte": "now/M"
+                                    "gte": "now-2M/M",
+                                    "lt": "now-1M/M"
                                 }
                             }
                         },
@@ -694,8 +627,8 @@ def price_change(
                         "filter": {
                             "range": {
                                 "date": {
-                                    "gte": "now-2M/M",
-                                    "lte": "now-1M/M"
+                                    "gte": "now-3M/M",
+                                    "lt": "now-2M/M"
                                 }
                             }
                         },
@@ -730,3 +663,9 @@ def price_change(
         return {"data": items[:limit]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=5200)
+
+
+# ============================================================

@@ -135,7 +135,7 @@ body {
 /* ============================================================
    FILTER SIDEBAR
    ============================================================ */
-.filter-sidebar {
+.filter-sidebar { width: 280px;
   width: 240px;
   flex-shrink: 0;
   position: sticky;
@@ -147,7 +147,7 @@ body {
   border-radius: var(--radius);
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .sidebar-section-title {
@@ -165,6 +165,28 @@ body {
   padding: 12px 14px 0;
 }
 
+.qf-row { display: flex; gap: 6px; align-items: center; }
+.qf-select { flex: 1; }
+.qf-search { flex: 1; padding: 8px; font-size: 13px; }
+.advanced-filter-toggle {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  border-top: 1px solid var(--border-light);
+  user-select: none;
+}
+
+.advanced-filter-toggle:hover { background: var(--surface-2); }
+
+.toggle-arrow { font-size: 10px; transition: transform 0.2s; }
+.toggle-arrow.open { transform: rotate(180deg); }
+
+.filter-group { padding: 10px 12px 0; }
 .filter-group:last-of-type { padding-bottom: 4px; }
 
 .filter-label {
@@ -349,8 +371,25 @@ body {
   min-width: 0;
 }
 
+/* === Content Card === */
+.content-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
 /* === Table Card === */
 .table-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.content-card.table-card {
   background: var(--surface);
   border-radius: var(--radius);
   border: 1px solid var(--border);
@@ -422,21 +461,9 @@ body {
 .result-table td:first-child { font-weight: 600; color: var(--text); }
 .result-table td:nth-child(2) { max-width: 220px; color: var(--text-2); font-size: 12px; }
 
-.result-table td.price-cell {
-  color: var(--danger) !important;
-  font-weight: 700;
-  font-family: 'DIN Alternate', 'Helvetica Neue', Arial, sans-serif;
-  white-space: nowrap;
-}
-
-.result-table td.tax-price-cell {
-  color: var(--success) !important;
-  font-weight: 600;
-  font-family: 'DIN Alternate', 'Helvetica Neue', Arial, sans-serif;
-  white-space: nowrap;
-}
-
-.result-table td.unit-cell { color: var(--text-3) !important; font-size: 12px; white-space: nowrap; }
+.result-table td.price-cell { white-space: nowrap; vertical-align: top; padding-top: 10px !important; }
+.result-table td.tax-price-cell { white-space: nowrap; vertical-align: top; padding-top: 10px !important; color: var(--text-2) !important; font-size: 12px; }
+.result-table td.unit-cell { color: var(--text-3) !important; font-size: 11px !important; white-space: nowrap; vertical-align: top; padding-top: 10px !important; }
 .result-table td.date-cell { color: var(--text-3) !important; font-size: 12px; white-space: nowrap; }
 
 /* === Pagination === */
@@ -483,6 +510,32 @@ body {
 }
 
 .page-btn.nav { font-size: 15px; padding: 0 10px; }
+
+.page-btn.ellipsis { cursor: default; color: var(--text-3); }
+.page-btn.ellipsis:hover:not(:disabled) { background: transparent; border-color: var(--border); }
+
+.page-size-wrap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-3);
+  margin-left: 10px;
+}
+
+.page-size-select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: var(--shadow);
+  height: 32px;
+}
 
 .page-jump-wrap {
   display: flex;
@@ -613,40 +666,37 @@ body {
 .price-cell.price-high {
   background: rgba(220, 38, 38, 0.08) !important;
 }
-.price-cell.price-high .price-value { color: var(--danger) !important; }
+.price-cell.price-high .price-main { color: var(--danger) !important; }
 
 .price-cell.price-low {
   background: rgba(59, 130, 246, 0.08) !important;
 }
-.price-cell.price-low .price-value { color: #3b82f6 !important; }
+.price-cell.price-low .price-main { color: #3b82f6 !important; }
 
-.price-value { font-weight: 700; }
-
-/* === Price badges === */
-.price-badge {
-  display: inline-block;
-  margin-left: 4px;
-  padding: 1px 5px;
-  border-radius: 3px;
-  font-size: 10px;
+.price-main {
+  font-size: 16px;
   font-weight: 700;
-  vertical-align: middle;
-  font-family: 'DIN Alternate', monospace;
+  color: var(--text);
+  font-family: 'DIN Alternate', 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.2;
 }
 
-.badge-danger  { background: rgba(220, 38, 38, 0.15); color: var(--danger); }
-.badge-warning { background: rgba(217, 119, 6, 0.15); color: var(--warning); }
-.badge-blue    { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
-
-/* === Tax diff badge === */
-.tax-badge {
-  display: block;
-  font-size: 10px;
-  color: #f97316;
-  font-weight: 600;
-  white-space: nowrap;
+.price-tax {
+  font-size: 11px;
+  color: var(--text-3);
+  font-weight: 400;
   margin-top: 1px;
+  font-family: 'DIN Alternate', 'Helvetica Neue', Arial, sans-serif;
 }
+
+.price-change {
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 2px;
+  font-family: 'DIN Alternate', 'Helvetica Neue', Arial, sans-serif;
+}
+.change-up { color: var(--danger); }
+.change-down { color: var(--success); }
 
 /* === Stale row (old date > 30 days) === */
 .stale-row td { opacity: 0.55; }
@@ -782,15 +832,17 @@ body {
   flex-wrap: wrap;
   gap: 4px;
   align-items: center;
+  padding: 0 12px;
 }
 
 .history-label {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-3);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: 600;
-  width: 100%;
+  display: block;
+  margin-bottom: 5px;
 }
 
 .history-chip {
@@ -870,6 +922,30 @@ body {
 .table-count strong { color: var(--primary); font-weight: 700; }
 
 /* === Province bar inline (new v-for structure) === */
+.breed-cell { text-align: left; }
+.breed-name {
+  display: block;
+  font-weight:  600;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.3;
+}
+.breed-meta {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 2px;
+}
+.meta-tag {
+  font-size: 11px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+.meta-sep { color: var(--text-3); font-size: 11px; }
+
 .province-bar-inline {
   display: flex;
   align-items: center;
@@ -901,14 +977,10 @@ body {
 
 /* === Chart View === */
 .chart-view { margin-top: 14px; }
-.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
-.chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
-.chart-card-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid var(--border-light); background: var(--surface-2); }
-.chart-card-title { font-size: 13px; font-weight: 600; color: var(--text); }
-.chart-container { height: 220px; padding: 8px 4px 4px; }
 
 /* === Change boards === */
 .change-boards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.change-boards-caption { color: #dc2626; font-size: 11px; padding: 0 0 8px; line-height: 1.4; text-align: center; }
 .change-board { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
 .change-board-title { padding: 10px 14px; font-size: 13px; font-weight: 700; border-bottom: 1px solid var(--border-light); background: var(--surface-2); }
 .gainers .change-board-title { color: var(--success); }

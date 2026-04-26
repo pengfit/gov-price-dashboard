@@ -43,19 +43,32 @@
         <div class="sidebar-section">
           <div class="sidebar-section-title">🔍 筛选条件</div>
 
-          <!-- Keyword -->
+          <!-- 模式一：顶部快速筛选 -->
           <div class="filter-group">
             <label class="filter-label">产品名称</label>
             <input
               class="filter-input"
               v-model="searchKeyword"
-              placeholder="输入产品名称/关键词..."
+              placeholder="🔍 产品名称 / 关键词"
               @keyup.enter="doSearch()"
               @input="onKeywordInput"
             />
-            <!-- Search history -->
+          </div>
+          <!-- 省份 -->
+          <div class="filter-group">
+            <label class="filter-label">省份</label>
+            <CustomSelect
+              v-model="searchProvince"
+              :options="overview.by_province.map(p => ({ key: p.province, count: p.count }))"
+              placeholder="全部省份"
+              @change="() => { onProvinceChange(); doSearch(); }"
+            />
+          </div>
+
+          <!-- 最近搜索 -->
+          <div class="filter-group">
+            <label class="filter-label">最近搜索</label>
             <div class="search-history" v-if="searchHistory.length && !searchKeyword">
-              <div class="history-label">最近搜索</div>
               <span
                 v-for="h in searchHistory"
                 :key="h"
@@ -65,58 +78,54 @@
             </div>
           </div>
 
-          <!-- Province -->
-          <div class="filter-group">
-            <label class="filter-label">省份</label>
-            <CustomSelect
-              v-model="searchProvince"
-              :options="overview.by_province.map(p => ({ key: p.province, count: p.count }))"
-              placeholder="全部省份"
-              :searchable="true"
-              @change="onProvinceChange"
-            />
+          <!-- 模式二：高级筛选折叠区 -->
+          <div class="advanced-filter-toggle" @click="showAdvanced = !showAdvanced">
+            <span>🛠️ 高级筛选</span>
+            <span class="toggle-arrow" :class="{ open: showAdvanced }">▼</span>
           </div>
 
-          <!-- City -->
-          <div class="filter-group">
-            <label class="filter-label">城市</label>
-            <CustomSelect
-              v-model="searchCity"
-              :options="filteredCities.map(c => ({ key: c.key, count: c.count }))"
-              :disabled="!searchProvince"
-              placeholder="全部城市"
-              :searchable="true"
-            />
-          </div>
-
-          <!-- County -->
-          <div class="filter-group">
-            <label class="filter-label">区县</label>
-            <CustomSelect
-              v-model="searchCounty"
-              :options="filteredCounties.map(c => ({ key: c.key, count: c.count }))"
-              placeholder="全部区县"
-              :searchable="true"
-            />
-          </div>
-
-          <!-- Price Range -->
-          <div class="filter-group">
-            <label class="filter-label">价格区间</label>
-            <div class="price-range-row">
-              <input class="filter-input price-input" v-model="priceMin" placeholder="最低" type="number" @keyup.enter="doSearch()" />
-              <span class="price-dash">—</span>
-              <input class="filter-input price-input" v-model="priceMax" placeholder="最高" type="number" @keyup.enter="doSearch()" />
+          <!-- Advanced filters (collapsible) -->
+          <div class="advanced-filters" v-show="showAdvanced">
+            <!-- City -->
+            <div class="filter-group">
+              <label class="filter-label">城市</label>
+              <CustomSelect
+                v-model="searchCity"
+                :options="filteredCities.map(c => ({ key: c.key, count: c.count }))"
+                :disabled="!searchProvince"
+                placeholder="全部城市"
+                :searchable="true"
+              />
             </div>
-            <!-- Quick price presets -->
-            <div class="price-presets">
-              <span
-                v-for="preset in pricePresets"
-                :key="preset.label"
-                class="preset-chip"
-                :class="{ active: isPresetActive(preset) }"
-                @click="applyPreset(preset)"
-              >{{ preset.label }}</span>
+
+            <!-- County -->
+            <div class="filter-group">
+              <label class="filter-label">区县</label>
+              <CustomSelect
+                v-model="searchCounty"
+                :options="filteredCounties.map(c => ({ key: c.key, count: c.count }))"
+                placeholder="全部区县"
+                :searchable="true"
+              />
+            </div>
+
+            <!-- Price Range (详细) -->
+            <div class="filter-group">
+              <label class="filter-label">价格区间</label>
+              <div class="price-range-row">
+                <input class="filter-input price-input" v-model="priceMin" placeholder="最低" type="number" @keyup.enter="doSearch()" />
+                <span class="price-dash">—</span>
+                <input class="filter-input price-input" v-model="priceMax" placeholder="最高" type="number" @keyup.enter="doSearch()" />
+              </div>
+              <div class="price-presets">
+                <span
+                  v-for="preset in pricePresets"
+                  :key="preset.label"
+                  class="preset-chip"
+                  :class="{ active: isPresetActive(preset) }"
+                  @click="applyPreset(preset)"
+                >{{ preset.label }}</span>
+              </div>
             </div>
           </div>
 
@@ -135,15 +144,15 @@
         <div class="toolbar" v-if="searchResult.data && searchResult.data.length">
           <div class="toolbar-left">
             <span class="table-count">
-              共 <strong>{{ searchResult.total?.toLocaleString() }}</strong> 条结果
-              <span class="toolbar-page">第 {{ searchPage }} / {{ searchResult.pages || 1 }} 页</span>
+              <strong>{{ pageStart }}‑{{ pageEnd }}</strong>
+              / {{ searchResult.total?.toLocaleString() }} 条
             </span>
           </div>
           <div class="toolbar-right">
             <!-- View toggle -->
             <div class="view-tabs">
               <button class="view-tab" :class="{ active: !showChartView }" @click="showChartView = false">📋 列表</button>
-              <button class="view-tab" :class="{ active: showChartView }" @click="showChartView = true; loadChartData()">📈 图表</button>
+              <button class="view-tab" :class="{ active: showChartView }" @click="showChartView = true; loadChartData(true)">📈 图表</button>
             </div>
             <!-- Column config -->
             <div class="col-config-wrap" ref="colConfigRef">
@@ -165,10 +174,10 @@
           </div>
         </div>
 
-        <!-- ========== TABLE or LOADING or EMPTY ========== -->
+        <!-- ========== TABLE or CHART or LOADING or EMPTY ========== -->
 
         <!-- Skeleton loading (rows inside table wrapper) -->
-        <div class="table-card" v-if="loading">
+        <div class="content-card" v-if="loading">
           <div class="skeleton-header">
             <div class="skeleton-col" v-for="col in visibleColumns" :key="col.key" :style="{ width: col.width + 'px' }"></div>
           </div>
@@ -179,7 +188,7 @@
         </div>
 
         <!-- Empty state -->
-        <div v-else-if="!searchResult.data || !searchResult.data.length" class="empty-state">
+        <div v-else-if="!showChartView && (!searchResult.data || !searchResult.data.length)" class="empty-state">
           <div class="empty-icon">🗺️</div>
           <div class="empty-title">暂无数据</div>
           <div class="empty-hint">
@@ -195,7 +204,7 @@
         </div>
 
         <!-- Data Table -->
-        <div class="table-card" v-else>
+        <div class="content-card" v-else-if="!showChartView">
           <div class="table-scroll">
             <table class="result-table">
               <thead>
@@ -228,25 +237,26 @@
                     :title="col.key === 'breed' ? item.breed : col.key === 'spec' ? item.spec : undefined"
                   >
                     <template v-if="col.key === 'breed'">
-                      <div class="province-bar-inline">
-                        <div class="province-bar" :style="{ background: getProvinceColor(item.province) }"></div>
-                        <span v-html="highlightKeyword(item.breed)"></span>
+                      <div class="breed-cell">
+                        <span class="breed-name" v-html="highlightKeyword(item.breed)"></span>
+                        <div class="breed-meta">
+                          <span class="meta-tag">{{ item.spec || '—' }}</span>
+                          <span class="meta-sep">·</span>
+                          <span class="meta-tag">{{ item.city || '—' }}</span>
+                        </div>
                       </div>
                     </template>
-                    <template v-else-if="col.key === 'spec'">
-                      <span class="spec-text">{{ item.spec || '—' }}</span>
-                    </template>
-                    <template v-else-if="col.key === 'province'">{{ item.province }}</template>
-                    <template v-else-if="col.key === 'city'">{{ item.city }}</template>
-                    <template v-else-if="col.key === 'county'">{{ item.county || '—' }}</template>
+                    <template v-else-if="col.key === 'spec'"></template>
+                    <template v-else-if="col.key === 'province'"></template>
+                    <template v-else-if="col.key === 'city'"></template>
+                    <template v-else-if="col.key === 'county'"></template>
                     <template v-else-if="col.key === 'unit'">{{ item.unit }}</template>
                     <template v-else-if="col.key === 'price'">
-                      <span class="price-value">{{ fmtCell(item.price) }}</span>
-                      <span v-if="getPriceBadge(item)" class="price-badge" :class="getPriceBadge(item).cls">{{ getPriceBadge(item).text }}</span>
+                      <div class="price-main">{{ fmtCell(item.price) }}</div>
+                      <div v-if="getPriceChange(item)" class="price-change" :class="getPriceChange(item).cls">{{ getPriceChange(item).text }}</div>
                     </template>
                     <template v-else-if="col.key === 'tax_price'">
-                      <span>{{ fmtCell(item.tax_price) }}</span>
-                      <span v-if="getTaxDiffBadge(item)" class="tax-badge">{{ getTaxDiffBadge(item) }}</span>
+                      <div class="price-tax"> {{ fmtCell(item.tax_price) }}</div>
                     </template>
                     <template v-else-if="col.key === 'date'">
                       <span :class="{ 'stale-date': isStale(item.date) }">{{ item.date || '—' }}</span>
@@ -262,11 +272,12 @@
           <div class="pagination" v-if="searchResult.pages && searchResult.pages > 1">
             <button class="page-btn nav" :disabled="searchPage <= 1" @click="prevPage()">‹</button>
             <button
-              v-for="p in visiblePages"
+              v-for="p in pageRange"
               :key="p"
               class="page-btn"
-              :class="{ active: Number(p) === Number(searchPage) }"
-              @click="goToPage(p)"
+              :class="{ active: Number(p) === Number(searchPage), ellipsis: p === '...' }"
+              :disabled="p === '...'"
+              @click="p !== '...' && goToPage(Number(p))"
             >{{ p }}</button>
             <button class="page-btn nav" :disabled="searchPage >= searchResult.pages" @click="nextPage()">›</button>
             <div class="page-jump-wrap">
@@ -274,7 +285,35 @@
               <input class="page-jump" v-model.number="jumpPage" @keyup.enter="goToPage(jumpPage)" type="number" min="1" :max="searchResult.pages" />
               <span>页</span>
             </div>
+            <div class="page-size-wrap">
+              <span>每页</span>
+              <select class="page-size-select" v-model.number="pageSize" @change="onPageSizeChange">
+                <option v-for="s in pageSizeOptions" :key="s" :value="s">{{ s }}</option>
+              </select>
+              <span>条</span>
+            </div>
           </div>
+        </div>
+
+        <!-- ========== Chart View (shares same area as table) ========== -->
+        <div v-else class="content-card chart-view">
+          <div class="change-boards" v-if="changeData.length">
+            <div class="change-board gainers">
+              <div class="change-board-title">📈 涨幅榜</div>
+              <div class="change-item" v-for="item in topGainers" :key="item.breed">
+                <span class="change-breed">{{ item.breed }}</span>
+                <span class="change-pct up">+{{ item.change_pct }}%</span>
+              </div>
+            </div>
+            <div class="change-board losers">
+              <div class="change-board-title">📉 跌幅榜</div>
+              <div class="change-item" v-for="item in topLosers" :key="item.breed">
+                <span class="change-breed">{{ item.breed }}</span>
+                <span class="change-pct down">{{ item.change_pct }}%</span>
+              </div>
+            </div>
+          </div>
+          <div class="change-boards-caption">涨幅/跌幅榜 = 近两期（本月 vs 上月）均价变化率，红色数字为品种价格波动幅度排名</div>
         </div>
       </main>
     </div>
@@ -282,42 +321,6 @@
 
   <!-- Toast -->
   <div v-if="toast.show" class="toast">{{ toast.msg }}</div>
-
-  <!-- =====================================================
-       P2: Chart View
-       ===================================================== -->
-  <div v-if="showChartView" class="chart-view">
-    <div class="chart-grid">
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <div class="chart-card-title">📉 价格走势（近12月）</div>
-        </div>
-        <div id="trendChart" class="chart-container"></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <div class="chart-card-title">🍩 价格区间分布</div>
-        </div>
-        <div id="distChart" class="chart-container"></div>
-      </div>
-    </div>
-    <div class="change-boards" v-if="changeData.length">
-      <div class="change-board gainers">
-        <div class="change-board-title">📈 涨幅榜</div>
-        <div class="change-item" v-for="item in topGainers" :key="item.breed">
-          <span class="change-breed">{{ item.breed }}</span>
-          <span class="change-pct up">+{{ item.change_pct }}%</span>
-        </div>
-      </div>
-      <div class="change-board losers">
-        <div class="change-board-title">📉 跌幅榜</div>
-        <div class="change-item" v-for="item in topLosers" :key="item.breed">
-          <span class="change-breed">{{ item.breed }}</span>
-          <span class="change-pct down">{{ item.change_pct }}%</span>
-        </div>
-      </div>
-    </div>
-  </div>
 </template>
 
 <script setup>
@@ -344,6 +347,8 @@ const cityOptions = ref([])
 const countyOptions = ref([])
 const provinceCityMap = ref({})
 const jumpPage = ref(1)
+const pageSize = ref(20)
+const pageSizeOptions = [20, 50, 100]
 const searchHistory = ref(JSON.parse(localStorage.getItem('gov_price_history') || '[]'))
 
 // Sort
@@ -355,13 +360,11 @@ const showColConfig = ref(false)
 const colConfigRef = ref(null)
 const allColumns = ref([
   { key: 'breed',    label: '产品名称',  sortable: true,  visible: true, width: 180 },
-  { key: 'spec',     label: '规格',      sortable: true,  visible: true, width: 160 },
-  { key: 'province', label: '省份',      sortable: true,  visible: true, width: 80  },
-  { key: 'city',     label: '城市',      sortable: true,  visible: true, width: 90  },
-  { key: 'county',   label: '区县',      sortable: false, visible: true, width: 90  },
-  { key: 'unit',     label: '单位',      sortable: false, visible: true, width: 60  },
+  { key: 'spec',     label: '规格',      sortable: true,  visible: false, width: 200 },
+  { key: 'city',     label: '城市',      sortable: true,  visible: false, width: 90  },
   { key: 'price',    label: '价格',      sortable: true,  visible: true, width: 110 },
   { key: 'tax_price',label: '含税价',   sortable: false, visible: true, width: 110 },
+  { key: 'unit',     label: '单位',      sortable: false, visible: true, width: 60  },
   { key: 'date',     label: '日期',      sortable: true,  visible: true, width: 95  },
 ])
 
@@ -425,11 +428,44 @@ const sortedData = computed(() => {
   })
 })
 
-const visiblePages = computed(() => {
+function onPageSizeChange() {
+  searchPage.value = '1'
+  jumpPage.value = 1
+  doSearch(1)
+}
+
+const pageStart = computed(() => {
+  const s = (Number(searchPage.value) - 1) * pageSize.value + 1
+  return s > 0 ? s.toLocaleString() : '0'
+})
+
+const pageEnd = computed(() => {
+  const e = Math.min(Number(searchPage.value) * pageSize.value, searchResult.value.total || 0)
+  return e.toLocaleString()
+})
+
+const pageRange = computed(() => {
   const total = searchResult.value.pages || 1
   const cur = Number(searchPage.value)
+  if (total <= 7) {
+    return Array.from({length: total}, (_, i) => i + 1)
+  }
   const range = []
-  for (let i = Math.max(1, cur - 2); i <= Math.min(total, cur + 2); i++) range.push(i)
+  if (cur <= 4) {
+    for (let i = 1; i <= 5; i++) range.push(i)
+    range.push('...')
+    range.push(total)
+  } else if (cur >= total - 3) {
+    range.push(1)
+    range.push('...')
+    for (let i = total - 4; i <= total; i++) range.push(i)
+  } else {
+    range.push(1)
+    range.push('...')
+    for (let i = cur - 1; i <= cur + 1; i++) range.push(i)
+    range.push('...')
+    range.push(total)
+  }
   return range
 })
 
@@ -485,7 +521,7 @@ async function doSearch(pageOverride) {
     if (priceMin.value) params.price_min = priceMin.value
     if (priceMax.value) params.price_max = priceMax.value
     params.page = pageOverride || Number(searchPage.value)
-    params.page_size = 20
+    params.page_size = pageSize.value
 
     const { data: res } = await axios.get(`${API}/search`, { params })
     searchResult.value = res || {}
@@ -515,6 +551,7 @@ function resetSearch() {
   searchPage.value = '1'
   jumpPage.value = 1
   sortKey.value = ''
+  sortDir.value = 'asc'
   sortDir.value = 'asc'
   searchResult.value = {}
 }
@@ -559,6 +596,19 @@ function getTaxDiffBadge(item) {
   const diff = (tp - p) / p
   if (diff > 0.2) return '含税溢价 ' + (diff * 100).toFixed(0) + '%'
   return null
+}
+
+function getPriceChange(item) {
+  const n = Number(item.price)
+  const prev = Number(item.prev_price)
+  if (isNaN(n) || isNaN(prev) || prev <= 0) return null
+  const pct = ((n - prev) / prev) * 100
+  const sign = pct >= 0 ? '+' : ''
+  const arrow = pct >= 0 ? '↑' : '↓'
+  return {
+    text: `${sign}${pct.toFixed(1)}%`,
+    cls: pct >= 0 ? 'change-up' : 'change-down'
+  }
 }
 
 function getCellClass(key, item) {
@@ -707,12 +757,36 @@ import { markRaw } from 'vue'
 import * as echarts from 'echarts'
 
 const showChartView = ref(false)
-const trendData = ref([])
-const distData = ref([])
-const changeData = ref([])
+const showAdvanced = ref(false)
+const quickPricePreset = ref('')
 
-async function loadChartData() {
-  if (trendData.value.length && distData.value.length) return
+const quickPriceOptions = [
+  { key: '', count: 0, label: '不限' },
+  { key: '0-3000', count: 0, label: '3000以下' },
+  { key: '3000-5000', count: 0, label: '3000-5000' },
+  { key: '5000-8000', count: 0, label: '5000-8000' },
+  { key: '8000-10000', count: 0, label: '8000-10000' },
+  { key: '10000+', count: 0, label: '10000以上' },
+]
+
+function onQuickPriceChange() {
+  const v = quickPricePreset.value
+  if (!v) { priceMin.value = ''; priceMax.value = ''; return }
+  if (v === '0-3000') { priceMin.value = ''; priceMax.value = '3000'; }
+  else if (v === '3000-5000') { priceMin.value = '3000'; priceMax.value = '5000'; }
+  else if (v === '5000-8000') { priceMin.value = '5000'; priceMax.value = '8000'; }
+  else if (v === '8000-10000') { priceMin.value = '8000'; priceMax.value = '10000'; }
+  else if (v === '10000+') { priceMin.value = '10000'; priceMax.value = ''; }
+}
+const trendData = ref([])
+
+const changeData = ref([])
+const trendChartIns = ref(null)
+
+async function loadChartData(force) {
+  // force=true means user switched to chart view — always reload
+  if (!force && trendData.value.length) return
+
   try {
     const params = new URLSearchParams()
     if (searchKeyword.value.trim()) params.append('keyword', searchKeyword.value.trim())
@@ -720,17 +794,14 @@ async function loadChartData() {
     if (searchCity.value) params.append('city', searchCity.value)
     if (priceMin.value) params.append('price_min', priceMin.value)
     if (priceMax.value) params.append('price_max', priceMax.value)
-    const [trend, dist, change] = await Promise.all([
+    const [trend, change] = await Promise.all([
       loadAPI(`${API}/stats/price-trend?${params}&months=12`),
-      loadAPI(`${API}/stats/price-distribution?${params}`),
       loadAPI(`${API}/stats/price-change?${params}&limit=20`),
     ])
     trendData.value = (trend.data || []).slice(-12)
-    distData.value = dist.data || []
     changeData.value = change.data || []
     await nextTick()
     renderTrendChart()
-    renderDistChart()
   } catch (e) {
     console.warn('chart load error:', e)
   }
@@ -739,7 +810,9 @@ async function loadChartData() {
 function renderTrendChart() {
   const el = document.getElementById('trendChart')
   if (!el || !trendData.value.length) return
+  if (trendChartIns.value) { trendChartIns.value.dispose(); trendChartIns.value = null }
   const chart = markRaw(echarts.init(el))
+  trendChartIns.value = chart
   chart.setOption({
     tooltip: { trigger: 'axis', backgroundColor: '#1a2332', borderColor: '#1e3a5f', textStyle: { color: '#e2e8f0', fontSize: 12 }, formatter: p => `<b>${p[0].name}</b><br/>均价: <b style="color:#3b9eff">¥${p[0].value}</b><br/>数量: <b style="color:#34d399">${p[1]?.value?.toLocaleString() || '-'}</b> 条` },
     legend: { data: ['均价', '数量'], bottom: 0, textStyle: { color: '#94a3b8', fontSize: 10 }, icon: 'roundRect' },
@@ -754,21 +827,9 @@ function renderTrendChart() {
       { name: '数量', type: 'bar', data: trendData.value.map(d => d.count), color: 'rgba(52,211,153,0.6)', yAxisIndex: 1, barMaxWidth: 14 }
     ]
   }, true)
-  window.addEventListener('resize', () => chart.resize())
+  window.addEventListener('resize', () => trendChartIns.value?.resize())
 }
 
-function renderDistChart() {
-  const el = document.getElementById('distChart')
-  if (!el || !distData.value.length) return
-  const chart = markRaw(echarts.init(el))
-  const COLORS = ['#3b9eff','#5cdbd3','#34d399','#fbbf24','#f87171','#a78bfa']
-  chart.setOption({
-    tooltip: { trigger: 'item', backgroundColor: '#1a2332', borderColor: '#1e3a5f', textStyle: { color: '#e2e8f0', fontSize: 12 }, formatter: p => `<b>${p.name}</b><br/>数量: <b style="color:#5cdbd3">${p.value.toLocaleString()}</b> 条` },
-    legend: { orient: 'horizontal', bottom: 0, textStyle: { color: '#94a3b8', fontSize: 11 } },
-    series: [{ type: 'pie', radius: ['38%', '68%'], center: ['50%', '45%'], avoidLabelOverlap: true, itemStyle: { borderColor: '#0f172a', borderWidth: 2 }, label: { show: true, formatter: '{b}\n{d}%', fontSize: 10, color: '#94a3b8' }, emphasis: { scale: true, scaleSize: 6 }, data: distData.value.map((d, i) => ({ name: d.range, value: d.count, itemStyle: { color: COLORS[i % 6] } })) }]
-  }, true)
-  chart.resize()
-}
 
 const topGainers = computed(() => (changeData.value || []).filter(x => x.change_pct > 0).slice(0, 10))
 const topLosers = computed(() => (changeData.value || []).filter(x => x.change_pct < 0).sort((a, b) => a.change_pct - b.change_pct).slice(0, 10))
