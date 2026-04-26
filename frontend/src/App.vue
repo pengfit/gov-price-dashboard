@@ -90,7 +90,6 @@
         <div class="search-section-title">
           <span>🔍</span> 价格搜索
         </div>
-        <button class="btn-reset" @click="resetSearch" title="重置搜索">重置</button>
       </div>
 
       <div class="search-bar">
