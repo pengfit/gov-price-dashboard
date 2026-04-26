@@ -23,25 +23,11 @@
         <div class="stat-icon">🗺️</div>
         <div class="stat-label">覆盖省份</div>
         <div class="stat-value">{{ overview.total_provinces }}</div>
-        <div class="stat-meta">省级行政区</div>
       </div>
       <div class="stat-card">
         <div class="stat-icon">🏙️</div>
         <div class="stat-label">覆盖城市</div>
         <div class="stat-value">{{ overview.total_cities }}</div>
-        <div class="stat-meta">地级以上城市</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">💰</div>
-        <div class="stat-label">平均价格</div>
-        <div class="stat-value">¥{{ fmtPrice(overview.avg_price) }}</div>
-        <div class="stat-meta">含税均价</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">📈</div>
-        <div class="stat-label">最高价格</div>
-        <div class="stat-value">¥{{ fmtPrice(overview.max_price) }}</div>
-        <div class="stat-meta">市场最高价</div>
       </div>
     </div>
 
