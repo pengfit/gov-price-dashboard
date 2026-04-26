@@ -187,8 +187,8 @@
               <td>{{ item.city }}</td>
               <td>{{ item.county || '—' }}</td>
               <td class="unit-cell">{{ item.unit }}</td>
-              <td class="price-cell">{{ item.price != null ? '¥' + item.price.toFixed(2) : '—' }}</td>
-              <td class="tax-price-cell">{{ item.tax_price != null ? '¥' + item.tax_price.toFixed(2) : '—' }}</td>
+              <td class="price-cell">{{ fmtCell(item.price) }}</td>
+              <td class="tax-price-cell">{{ fmtCell(item.tax_price) }}</td>
               <td class="date-cell">{{ item.date || '—' }}</td>
             </tr>
           </tbody>
@@ -298,9 +298,15 @@ const visiblePages = computed(() => {
 
 // === Helpers ===
 function fmtPrice(v) {
-  if (!v) return '0.00'
+  if (!v && v !== 0) return '0.00'
   if (v >= 10000) return (v / 10000).toFixed(1) + '万'
-  return v.toFixed(2)
+  return Number(v).toFixed(2)
+}
+
+function fmtCell(v) {
+  if (v == null || v === '') return '—'
+  const n = Number(v)
+  return isNaN(n) ? v : '¥' + n.toFixed(2)
 }
 
 function highlightKeyword(text) {
