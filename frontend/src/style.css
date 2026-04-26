@@ -868,3 +868,12 @@ body {
 
 /* === Toolbar count bold === */
 .table-count strong { color: var(--primary); font-weight: 700; }
+
+/* === Province bar inline (new v-for structure) === */
+.province-bar-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  max-width: 100%;
+}

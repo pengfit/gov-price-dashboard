@@ -5,7 +5,7 @@
     <header class="top-bar">
       <div class="top-bar-left">
         <div class="top-bar-logo">🏗️</div>
-        <div class="top-bar-title">建材价格看板</div>
+        <div class="top-bar-title">材料价格看板</div>
       </div>
       <div class="top-bar-meta">
         <span class="meta-item">
