@@ -350,7 +350,7 @@ async function loadCityOptions() {
   }
 }
 
-function onMount() {
+async function onMount() {
   await Promise.all([loadOverview(), loadCityOptions()])
 }
 
