@@ -178,7 +178,7 @@ import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import axios from 'axios'
 import CustomSelect from './components/CustomSelect.vue'
 
-const API = 'http://localhost:5200'
+const API = 'http://localhost:5200/api'
 
 // === State ===
 const overview = ref({ total_docs: 0, total_provinces: 0, total_cities: 0, avg_price: 0, max_price: 0, min_price: 0, by_province: [] })
