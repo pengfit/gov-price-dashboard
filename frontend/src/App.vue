@@ -106,24 +106,7 @@
               />
             </div>
 
-            <!-- Price Range (详细) -->
-            <div class="filter-group">
-              <label class="filter-label">价格区间</label>
-              <div class="price-range-row">
-                <input class="filter-input price-input" v-model="priceMin" placeholder="最低" type="number" @keyup.enter="doSearch()" />
-                <span class="price-dash">—</span>
-                <input class="filter-input price-input" v-model="priceMax" placeholder="最高" type="number" @keyup.enter="doSearch()" />
-              </div>
-              <div class="price-presets">
-                <span
-                  v-for="preset in pricePresets"
-                  :key="preset.label"
-                  class="preset-chip"
-                  :class="{ active: isPresetActive(preset) }"
-                  @click="applyPreset(preset)"
-                >{{ preset.label }}</span>
-              </div>
-            </div>
+  
           </div>
 
           <!-- Actions -->
