@@ -69,15 +69,15 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
-  height: 58px;
+  padding: 16px 20px;
   background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  margin-bottom: 14px;
   position: sticky;
   top: 0;
   z-index: 100;
-  margin: 0 -20px;
 }
 
 .top-bar-left {
