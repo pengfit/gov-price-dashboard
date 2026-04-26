@@ -3,27 +3,27 @@
    ============================================================ */
 
 :root {
-  --bg: #020810;
-  --surface: #040d1a;
-  --surface-2: #071428;
-  --surface-3: #0a1e3a;
-  --border: rgba(0, 210, 255, 0.15);
-  --border-glow: rgba(0, 210, 255, 0.5);
+  --bg: #060e1c;
+  --surface: #091828;
+  --surface-2: #0d2240;
+  --surface-3: #112d56;
+  --border: rgba(0, 180, 255, 0.2);
+  --border-glow: rgba(0, 180, 255, 0.5);
 
-  --primary: #00d2ff;
-  --primary-dim: rgba(0, 210, 255, 0.12);
-  --primary-glow: rgba(0, 210, 255, 0.25);
-  --accent: #00ffa3;
-  --accent-dim: rgba(0, 255, 163, 0.12);
-  --accent-glow: rgba(0, 255, 163, 0.3);
+  --primary: #00b4ff;
+  --primary-dim: rgba(0, 180, 255, 0.1);
+  --primary-glow: rgba(0, 180, 255, 0.2);
+  --accent: #00e090;
+  --accent-dim: rgba(0, 224, 144, 0.1);
+  --accent-glow: rgba(0, 224, 144, 0.25);
   --purple: #a855f7;
-  --purple-dim: rgba(168, 85, 247, 0.15);
+  --purple-dim: rgba(168, 85, 247, 0.12);
   --danger: #ff4d6a;
   --warning: #ffd60a;
 
-  --text: #c8dff0;
-  --text-2: #7aa8c8;
-  --text-3: #3d6a8a;
+  --text: #d0e8f8;
+  --text-2: #8ab8d8;
+  --text-3: #5a88b0;
 
   --radius: 8px;
   --radius-sm: 4px;
@@ -50,8 +50,8 @@ body::before {
   position: fixed;
   inset: 0;
   background-image:
-    linear-gradient(rgba(0, 210, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 210, 255, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(0, 150, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 150, 255, 0.04) 1px, transparent 1px);
   background-size: 48px 48px;
   pointer-events: none;
   z-index: 0;
