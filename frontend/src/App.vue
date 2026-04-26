@@ -30,15 +30,8 @@
       </div>
     </div>
 
-    <!-- Charts Row 1: Price Dist + Province TOP -->
+    <!-- Charts Row: Province TOP -->
     <div class="charts-row halves">
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <div class="chart-card-title"><span class="icon">💰</span> 价格区间分布</div>
-          <div class="chart-card-badge">{{ priceDist.length }} 区间</div>
-        </div>
-        <div id="distChart"></div>
-      </div>
       <div class="chart-card">
         <div class="chart-card-header">
           <div class="chart-card-title"><span class="icon">🗺️</span> 省份数据量 TOP10</div>
@@ -198,7 +191,6 @@ const API = 'http://localhost:5200'
 
 // === State ===
 const overview = ref({ total_docs: 0, total_provinces: 0, total_cities: 0, avg_price: 0, max_price: 0, min_price: 0, by_province: [] })
-const priceDist = ref([])
 const searchKeyword = ref('')
 const searchProvince = ref('')
 const searchCity = ref('')
@@ -221,7 +213,7 @@ const sortDir = ref('asc')
 const toast = ref({ show: false, msg: '' })
 
 // Chart instances
-let distChart, provinceChart
+let provinceChart
 
 // === Computed ===
 const filteredCities = computed(() => {
@@ -342,13 +334,6 @@ async function loadOverview() {
   overview.value = data
 }
 
-async function loadPriceDist() {
-  const data = await loadAPI('/api/stats/price-distribution')
-  priceDist.value = data.data || []
-  await nextTick()
-  renderDistChart()
-}
-
 async function loadCityOptions() {
   const data = await loadAPI('/api/filter-options')
   cityOptions.value = data.cities || []
@@ -380,23 +365,6 @@ async function doSearch(pageOverride) {
 }
 
 // === Charts ===
-function renderDistChart() {
-  try {
-    const el = document.getElementById('distChart')
-    if (!el) return
-    if (!distChart) distChart = echarts.init(el)
-    const raw = priceDist.value
-    if (!raw || !raw.length) return
-    const colors = ['#3b9eff','#5cdbd3','#34d399','#fbbf24','#f87171','#a78bfa','#fb923c','#38bdf8','#4ade80','#facc15']
-    const data = raw.map((d, i) => ({ name: d.range || '未知', value: d.count, itemStyle: { color: colors[i % colors.length] } }))
-    distChart.setOption({
-      tooltip: { trigger: 'item', backgroundColor: '#1a2332', borderColor: '#1e3a5f', textStyle: { color: '#e2e8f0', fontSize: 12 }, formatter: p => `<b>${p.name}</b><br/>数量: <b style="color:#5cdbd3">${p.value.toLocaleString()}</b> 条<br/>占比: <b>${p.percent.toFixed(1)}%</b>` },
-      legend: { orient: 'horizontal', bottom: 0, textStyle: { color: '#94a3b8', fontSize: 11 }, pageTextStyle: { color: '#94a3b8' } },
-      series: [{ type: 'pie', radius: ['38%', '68%'], center: ['50%', '45%'], avoidLabelOverlap: true, itemStyle: { borderColor: '#0f172a', borderWidth: 2 }, label: { show: true, formatter: '{b}\n{d}%', fontSize: 10, color: '#94a3b8' }, emphasis: { scale: true, scaleSize: 6 }, data }]
-    }, true)
-  } catch(e) { console.warn('renderDistChart error:', e) }
-}
-
 function renderProvinceChart() {
   try {
     const el = document.getElementById('provinceChart')
@@ -426,9 +394,8 @@ onMounted(async () => {
   await loadOverview()
   await nextTick()
   renderProvinceChart()
-  await Promise.all([loadPriceDist(), loadCityOptions()])
+  await Promise.all([loadCityOptions()])
   window.addEventListener('resize', () => {
-    distChart?.resize()
     provinceChart?.resize()
   })
   // Keyboard shortcut: / to focus search
