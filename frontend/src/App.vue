@@ -191,12 +191,7 @@
           <div class="empty-hint">
             <div>可能原因：</div>
             <div>· 该省份暂无此类产品的价格记录</div>
-            <div>· 价格区间筛选范围过窄</div>
             <div>· 数据更新时间晚于最近日期</div>
-          </div>
-          <div class="empty-actions">
-            <button class="btn-ghost" @click="expandRange">扩大价格范围</button>
-            <button class="btn-ghost" @click="resetSearch">清除筛选</button>
           </div>
         </div>
 
