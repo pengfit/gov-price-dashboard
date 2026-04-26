@@ -1010,3 +1010,14 @@ body {
 .change-pct { font-weight: 700; font-family: 'DIN Alternate', monospace; font-size: 13px; flex-shrink: 0; }
 .change-pct.up { color: var(--success); }
 .change-pct.down { color: var(--danger); }
+
+
+/* Content fade transition */
+.content-fade-enter-active,
+.content-fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+.content-fade-enter-from,
+.content-fade-leave-to {
+  opacity: 0;
+}

@@ -172,7 +172,7 @@
         </div>
 
         <!-- ========== TABLE or CHART or LOADING or EMPTY ========== -->
-
+        <Transition name="content-fade">
         <!-- Skeleton loading (rows inside table wrapper) -->
         <div class="content-card" v-if="loading">
           <div class="skeleton-header">
@@ -312,6 +312,7 @@
           </div>
           <div class="change-boards-caption">涨幅/跌幅榜 = 近两期（本月 vs 上月）均价变化率，红色数字为品种价格波动幅度排名</div>
         </div>
+        </Transition>
       </main>
     </div>
   </div>
@@ -357,8 +358,6 @@ const showColConfig = ref(false)
 const colConfigRef = ref(null)
 const allColumns = ref([
   { key: 'breed',    label: '产品名称',  sortable: true,  visible: true, width: 180 },
-  { key: 'spec',     label: '规格',      sortable: true,  visible: false, width: 200 },
-  { key: 'city',     label: '城市',      sortable: true,  visible: false, width: 90  },
   { key: 'price',    label: '价格',      sortable: true,  visible: true, width: 110 },
   { key: 'tax_price',label: '含税价',   sortable: false, visible: true, width: 110 },
   { key: 'unit',     label: '单位',      sortable: false, visible: true, width: 60  },
