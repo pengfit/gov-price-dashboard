@@ -141,8 +141,45 @@ def search(
 
 
 @app.get("/api/stats/overview")
-def overview():
+def overview(
+    keyword: Optional[str] = Query(None),
+    province: Optional[str] = Query(None),
+    city: Optional[str] = Query(None),
+    unit: Optional[str] = Query(None),
+):
+    must_clauses = []
+    filter_clauses = []
+
+    if keyword:
+        kw_len = len(keyword)
+        if kw_len <= 2:
+            must_clauses.append({
+                "bool": {
+                    "should": [
+                        {"term": {"breed.keyword": {"value": keyword, "boost": 15}}},
+                        {"match": {"breed": {"query": keyword, "fuzziness": "AUTO", "boost": 5}}},
+                    ]
+                }
+            })
+        else:
+            must_clauses.append({
+                "bool": {
+                    "should": [
+                        {"match_phrase": {"breed": {"query": keyword, "boost": 20}}},
+                        {"match": {"breed": {"query": keyword, "operator": "and", "minimum_should_match": "100%", "boost": 10}}},
+                    ]
+                }
+            })
+    if province:
+        filter_clauses.append({"term": {"province": province}})
+    if city:
+        filter_clauses.append({"term": {"city": city}})
+    if unit:
+        filter_clauses.append({"term": {"unit": unit}})
+
+    query = _build_bool_query(must_clauses, filter_clauses)
     body = {
+        "query": query,
         "size": 0,
         "aggs": {
             "total_docs": {"value_count": {"field": "price"}},

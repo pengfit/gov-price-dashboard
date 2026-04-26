@@ -601,6 +601,16 @@ function handleDocClick(e) {
   }
 }
 
+// Reload overview (with current search filters) when filter state changes
+watch(
+  [searchKeyword, searchProvince, searchCity, priceMin, priceMax],
+  async () => {
+    if (Object.keys(searchResult.value).length) {
+      await loadOverview()
+    }
+  }
+)
+
 // ============================================================
 // API
 // ============================================================
@@ -609,7 +619,13 @@ async function loadAPI(url) {
 }
 
 async function loadOverview() {
-  const d = await loadAPI(`${API}/stats/overview`)
+  const params = new URLSearchParams()
+  if (searchKeyword.value.trim()) params.append('keyword', searchKeyword.value.trim())
+  if (searchProvince.value) params.append('province', searchProvince.value)
+  if (searchCity.value) params.append('city', searchCity.value)
+  if (priceMin.value) params.append('price_min', priceMin.value)
+  if (priceMax.value) params.append('price_max', priceMax.value)
+  const d = await loadAPI(`${API}/stats/overview?${params}`)
   overview.value = d || { total_docs: 0, total_provinces: 0, total_cities: 0, avg_price: 0, by_province: [] }
 }
 
