@@ -94,43 +94,48 @@
       </div>
 
       <div class="search-bar">
-        <div class="search-field">
-          <label>产品名称</label>
-          <input class="input-kw" v-model="searchKeyword" placeholder="输入产品名称/关键词..." @keyup.enter="doSearch()" />
+        <div class="search-group">
+          <label class="search-label">产品名称</label>
+          <input class="search-input input-kw" v-model="searchKeyword" placeholder="输入产品名称/关键词..." @keyup.enter="doSearch()" />
         </div>
 
-        <div class="search-field">
-          <label>省份</label>
-          <select v-model="searchProvince" @change="onProvinceChange">
+        <div class="search-group">
+          <label class="search-label">省份</label>
+          <select class="search-select" v-model="searchProvince" @change="onProvinceChange">
             <option value="">全部省份</option>
             <option v-for="p in overview.by_province" :key="p.province" :value="p.province">{{ p.province }}</option>
           </select>
         </div>
 
-        <div class="search-field">
-          <label>城市</label>
-          <select v-model="searchCity" :disabled="!searchProvince">
+        <div class="search-group">
+          <label class="search-label">城市</label>
+          <select class="search-select" v-model="searchCity" :disabled="!searchProvince">
             <option value="">全部城市</option>
             <option v-for="c in filteredCities" :key="c.key" :value="c.key">{{ c.key }} ({{ c.count }})</option>
           </select>
         </div>
 
-        <div class="search-field">
-          <label>区县</label>
-          <select v-model="searchCounty">
+        <div class="search-group">
+          <label class="search-label">区县</label>
+          <select class="search-select" v-model="searchCounty">
             <option value="">全部区县</option>
             <option v-for="c in filteredCounties" :key="c.key" :value="c.key">{{ c.key }} ({{ c.count }})</option>
           </select>
         </div>
 
-        <div class="search-field">
-          <label>价格区间</label>
-          <input class="input-price" v-model="priceMin" placeholder="最低" type="number" @keyup.enter="doSearch()" />
-          <span class="price-sep">~</span>
-          <input class="input-price" v-model="priceMax" placeholder="最高" type="number" @keyup.enter="doSearch()" />
+        <div class="search-group">
+          <label class="search-label">价格区间</label>
+          <div class="price-range">
+            <input class="search-input input-price" v-model="priceMin" placeholder="最低" type="number" @keyup.enter="doSearch()" />
+            <span class="price-sep">~</span>
+            <input class="search-input input-price" v-model="priceMax" placeholder="最高" type="number" @keyup.enter="doSearch()" />
+          </div>
         </div>
 
-        <button class="btn-search" @click="doSearch()">🔍 搜索</button>
+        <div class="search-actions">
+          <button class="btn-search" @click="doSearch()">🔍 搜索</button>
+          <button class="btn-reset" @click="resetSearch" title="重置">重置</button>
+        </div>
       </div>
 
       <!-- Results Meta -->
@@ -242,6 +247,7 @@ const loading = ref(false)
 const searchResult = ref({})
 const cityOptions = ref([])
 const countyOptions = ref([])
+const provinceCityMap = ref({})  // province -> [{key, count}]
 const jumpPage = ref(1)
 
 // Sort
@@ -257,22 +263,13 @@ let distChart, provinceChart, topChart, trendChart
 // === Computed ===
 const filteredCities = computed(() => {
   if (!searchProvince.value) return cityOptions.value
-  return cityOptions.value.filter(c => {
-    const src = allCityMap[c.key]
-    return src && src.province === searchProvince.value
-  })
+  return provinceCityMap.value[searchProvince.value] || []
 })
 
 const filteredCounties = computed(() => {
   if (!searchCity.value) return countyOptions.value
-  return countyOptions.value.filter(c => {
-    const src = allCountyMap[c.key]
-    return src && src.city === searchCity.value
-  })
+  return countyOptions.value.filter(c => c.city === searchCity.value)
 })
-
-const allCityMap = {}
-const allCountyMap = {}
 
 const sortedData = computed(() => {
   if (!searchResult.value.data || !sortKey.value) return searchResult.value.data || []
@@ -410,9 +407,7 @@ async function loadCityOptions() {
   const data = await loadAPI('/api/filter-options')
   cityOptions.value = data.cities || []
   countyOptions.value = data.counties || []
-  // Build maps
-  cityOptions.value.forEach(c => { allCityMap[c.key] = c })
-  countyOptions.value.forEach(c => { allCountyMap[c.key] = c })
+  provinceCityMap.value = data.provinceCityMap || {}
 }
 
 async function doSearch(pageOverride) {

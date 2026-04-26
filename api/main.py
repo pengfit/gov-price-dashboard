@@ -330,22 +330,48 @@ def price_distribution(
 @app.get("/api/filter-options")
 def filter_options():
     try:
-        province_agg = es.search(index=ES_INDEX, size=0, aggs={
-            "provinces": {"terms": {"field": "province", "size": 50, "order": {"_count": "desc"}}}
-        })
-        city_agg = es.search(index=ES_INDEX, size=0, aggs={
-            "cities": {"terms": {"field": "city", "size": 300, "order": {"_count": "desc"}}}
+        # Province + city in one query using composite agg
+        province_city_agg = es.search(index=ES_INDEX, size=0, aggs={
+            "by_province": {
+                "terms": {"field": "province", "size": 50, "order": {"_count": "desc"}},
+                "aggs": {
+                    "cities": {
+                        "terms": {"field": "city", "size": 100},
+                        "aggs": {
+                            "counties": {
+                                "terms": {"field": "county", "size": 100}
+                            }
+                        }
+                    }
+                }
+            }
         })
         unit_agg = es.search(index=ES_INDEX, size=0, aggs={
             "units": {"terms": {"field": "unit", "size": 50, "order": {"_count": "desc"}}}
         })
-        county_agg = es.search(index=ES_INDEX, size=0, aggs={
-            "counties": {"terms": {"field": "county", "size": 500, "order": {"_count": "desc"}}}
-        })
+
+        # Build flat city + county lists with parent linkage
+        city_list = []
+        county_list = []
+        province_city_map = {}  # province -> [{key, count}]
+
+        for pb in province_city_agg["aggregations"]["by_province"]["buckets"]:
+            prov = pb["key"]
+            province_city_map[prov] = []
+            for cb in pb["cities"]["buckets"]:
+                city_key = cb["key"]
+                if city_key:
+                    city_list.append({"key": city_key, "count": cb["doc_count"], "province": prov})
+                    province_city_map[prov].append({"key": city_key, "count": cb["doc_count"]})
+                for tb in cb["counties"]["buckets"]:
+                    county_key = tb["key"]
+                    if county_key:
+                        county_list.append({"key": county_key, "count": tb["doc_count"], "province": prov, "city": city_key})
+
         return {
-            "provinces": [{"key": b["key"], "count": b["doc_count"]} for b in province_agg["aggregations"]["provinces"]["buckets"]],
-            "cities": [{"key": b["key"], "count": b["doc_count"]} for b in city_agg["aggregations"]["cities"]["buckets"] if b["key"]],
-            "counties": [{"key": b["key"], "count": b["doc_count"]} for b in county_agg["aggregations"]["counties"]["buckets"] if b["key"]],
+            "cities": city_list,
+            "counties": county_list,
+            "provinceCityMap": province_city_map,
             "units": [{"key": b["key"], "count": b["doc_count"]} for b in unit_agg["aggregations"]["units"]["buckets"] if b["key"]],
         }
     except Exception as e:
