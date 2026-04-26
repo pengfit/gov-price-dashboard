@@ -49,23 +49,6 @@
       </div>
     </div>
 
-    <!-- Charts Row 2: Price Trend -->
-    <div class="charts-row halves">
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <div class="chart-card-title"><span class="icon">📈</span> 价格走势</div>
-          <CustomSelect
-            v-model="trendProvince"
-            :options="overview.by_province.map(p => ({ key: p.province, count: p.count }))"
-            placeholder="全国"
-            :searchable="true"
-            @change="loadTrend"
-          />
-        </div>
-        <div id="trendChart"></div>
-      </div>
-    </div>
-
     <!-- Search Section -->
     <div class="search-section">
       <div class="search-section-header">
@@ -217,11 +200,6 @@ const API = 'http://localhost:5200'
 // === State ===
 const overview = ref({ total_docs: 0, total_provinces: 0, total_cities: 0, avg_price: 0, max_price: 0, min_price: 0, by_province: [] })
 const priceDist = ref([])
-const trendData = ref([])
-
-const trendProvince = ref('')
-const trendKeyword = ref('')
-
 const searchKeyword = ref('')
 const searchProvince = ref('')
 const searchCity = ref('')
@@ -244,7 +222,7 @@ const sortDir = ref('asc')
 const toast = ref({ show: false, msg: '' })
 
 // Chart instances
-let distChart, provinceChart, trendChart
+let distChart, provinceChart
 
 // === Computed ===
 const filteredCities = computed(() => {
@@ -372,16 +350,6 @@ async function loadPriceDist() {
   renderDistChart()
 }
 
-async function loadTrend() {
-  let url = `/api/stats/price-trend?months=12`
-  if (trendProvince.value) url += `&province=${encodeURIComponent(trendProvince.value)}`
-  if (trendKeyword.value) url += `&keyword=${encodeURIComponent(trendKeyword.value)}`
-  const data = await loadAPI(url)
-  trendData.value = data.data || []
-  await nextTick()
-  renderTrendChart()
-}
-
 async function loadCityOptions() {
   const data = await loadAPI('/api/filter-options')
   cityOptions.value = data.cities || []
@@ -454,41 +422,15 @@ function renderProvinceChart() {
   } catch(e) { console.warn('renderProvinceChart error:', e) }
 }
 
-function renderTrendChart() {
-  try {
-    const el = document.getElementById('trendChart')
-    if (!el) return
-    if (!trendChart) trendChart = echarts.init(el)
-    const months = trendData.value.map(d => d.month)
-    const avgs = trendData.value.map(d => d.avg_price)
-    const counts = trendData.value.map(d => d.count)
-    trendChart.setOption({
-      tooltip: { trigger: 'axis', backgroundColor: '#1a2332', borderColor: '#1e3a5f', textStyle: { color: '#e2e8f0', fontSize: 12 }, formatter: p => `<b>${p[0].name}</b><br/><span style="color:#3b9eff">均价:</span> <b>¥${p[0].value || '-'}</b><br/><span style="color:#34d399">数量:</span> <b>${p[1]?.value?.toLocaleString() || '-'}</b> 条` },
-      legend: { data: ['均价', '数量'], bottom: 0, textStyle: { color: '#94a3b8', fontSize: 10 }, icon: 'roundRect' },
-      grid: { left: '3%', right: '4%', bottom: '18%', top: '5%', containLabel: true },
-      xAxis: { type: 'category', data: months, axisLabel: { color: '#94a3b8', fontSize: 10 }, axisLine: { lineStyle: { color: '#1e3a5f' } }, axisTick: { show: false }, splitLine: { show: false } },
-      yAxis: [
-        { name: '均价(¥)', nameTextStyle: { color: '#64748b', fontSize: 9 }, type: 'value', axisLabel: { color: '#64748b', fontSize: 9, formatter: v => v >= 1000 ? (v/1000).toFixed(0)+'k' : v }, splitLine: { lineStyle: { color: '#1e3a5f', type: 'dashed' } } },
-        { name: '数量', nameTextStyle: { color: '#64748b', fontSize: 9 }, type: 'value', axisLabel: { color: '#64748b', fontSize: 9 }, splitLine: { show: false } }
-      ],
-      series: [
-        { name: '均价', type: 'line', data: avgs, smooth: 0.4, color: '#3b9eff', symbol: 'circle', symbolSize: 5, lineStyle: { width: 2 }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(59,158,255,0.2)' }, { offset: 1, color: 'rgba(59,158,255,0)' }]) } },
-        { name: '数量', type: 'bar', data: counts, color: 'rgba(52,211,153,0.6)', yAxisIndex: 1, barMaxWidth: 16 }
-      ]
-    }, true)
-  } catch(e) { console.warn('renderTrendChart error:', e) }
-}
-
 // === Mount ===
 onMounted(async () => {
   await loadOverview()
   await nextTick()
   renderProvinceChart()
-  await Promise.all([loadPriceDist(), loadTrend(), loadCityOptions()])
+  await Promise.all([loadPriceDist(), loadCityOptions()])
   window.addEventListener('resize', () => {
     distChart?.resize()
     provinceChart?.resize()
-    trendChart?.resize()
   })
   // Keyboard shortcut: / to focus search
   document.addEventListener('keydown', e => {
