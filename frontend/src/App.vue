@@ -1,168 +1,171 @@
 <template>
   <div class="dashboard">
-    <!-- Header -->
-    <header class="header">
-      <div class="header-left">
-        <div class="header-logo">🏗️</div>
-        <div class="header-title">
-          <h1>建材价格看板</h1>
-        </div>
+    <!-- Header Bar -->
+    <header class="top-bar">
+      <div class="top-bar-left">
+        <div class="top-bar-logo">🏗️</div>
+        <div class="top-bar-title">建材价格看板</div>
       </div>
-      <div class="header-right">
-        <div class="doc-count">
-          <span>数据总量</span>
-          <strong>{{ overview.total_docs.toLocaleString() }}</strong>
-        </div>
+      <div class="top-bar-meta">
+        <span class="meta-item">
+          <span class="meta-label">数据总量</span>
+          <span class="meta-value">{{ overview.total_docs.toLocaleString() }}</span>
+        </span>
+        <span class="meta-sep">|</span>
+        <span class="meta-item">
+          <span class="meta-label">省份</span>
+          <span class="meta-value">{{ overview.total_provinces }}</span>
+        </span>
+        <span class="meta-sep">|</span>
+        <span class="meta-item">
+          <span class="meta-label">城市</span>
+          <span class="meta-value">{{ overview.total_cities }}</span>
+        </span>
       </div>
     </header>
 
-    <!-- Stats Cards -->
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-icon">🗺️</div>
-        <div class="stat-label">覆盖省份</div>
-        <div class="stat-value">{{ overview.total_provinces }}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">🏙️</div>
-        <div class="stat-label">覆盖城市</div>
-        <div class="stat-value">{{ overview.total_cities }}</div>
-      </div>
-    </div>
+    <!-- Main Layout: Sidebar + Content -->
+    <div class="main-layout">
 
-    <!-- Search Section -->
-    <div class="search-section">
-      <div class="search-section-header">
-        <div class="search-section-title">
-          <span>🔍</span> 价格搜索
-        </div>
-      </div>
+      <!-- Left Sidebar: Filters -->
+      <aside class="filter-sidebar">
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">🔍 筛选条件</div>
 
-      <div class="search-bar">
-        <div class="search-group">
-          <label class="search-label">产品名称</label>
-          <input class="search-input input-kw" v-model="searchKeyword" placeholder="输入产品名称/关键词..." @keyup.enter="doSearch()" />
-        </div>
+          <div class="filter-group">
+            <label class="filter-label">产品名称</label>
+            <input class="filter-input" v-model="searchKeyword" placeholder="输入产品名称/关键词..." @keyup.enter="doSearch()" />
+          </div>
 
-        <div class="search-group">
-          <label class="search-label">省份</label>
-          <CustomSelect
-            v-model="searchProvince"
-            :options="overview.by_province.map(p => ({ key: p.province, count: p.count }))"
-            placeholder="全部省份"
-            :searchable="true"
-            @change="onProvinceChange"
-          />
-        </div>
+          <div class="filter-group">
+            <label class="filter-label">省份</label>
+            <CustomSelect
+              v-model="searchProvince"
+              :options="overview.by_province.map(p => ({ key: p.province, count: p.count }))"
+              placeholder="全部省份"
+              :searchable="true"
+              @change="onProvinceChange"
+            />
+          </div>
 
-        <div class="search-group">
-          <label class="search-label">城市</label>
-          <CustomSelect
-            v-model="searchCity"
-            :options="filteredCities.map(c => ({ key: c.key, count: c.count }))"
-            :disabled="!searchProvince"
-            placeholder="全部城市"
-            :searchable="true"
-          />
-        </div>
+          <div class="filter-group">
+            <label class="filter-label">城市</label>
+            <CustomSelect
+              v-model="searchCity"
+              :options="filteredCities.map(c => ({ key: c.key, count: c.count }))"
+              :disabled="!searchProvince"
+              placeholder="全部城市"
+              :searchable="true"
+            />
+          </div>
 
-        <div class="search-group">
-          <label class="search-label">区县</label>
-          <CustomSelect
-            v-model="searchCounty"
-            :options="filteredCounties.map(c => ({ key: c.key, count: c.count }))"
-            placeholder="全部区县"
-            :searchable="true"
-          />
-        </div>
+          <div class="filter-group">
+            <label class="filter-label">区县</label>
+            <CustomSelect
+              v-model="searchCounty"
+              :options="filteredCounties.map(c => ({ key: c.key, count: c.count }))"
+              placeholder="全部区县"
+              :searchable="true"
+            />
+          </div>
 
-        <div class="search-group">
-          <label class="search-label">价格区间</label>
-          <div class="price-range">
-            <input class="search-input input-price" v-model="priceMin" placeholder="最低" type="number" @keyup.enter="doSearch()" />
-            <span class="price-sep">~</span>
-            <input class="search-input input-price" v-model="priceMax" placeholder="最高" type="number" @keyup.enter="doSearch()" />
+          <div class="filter-group">
+            <label class="filter-label">价格区间</label>
+            <div class="price-range-row">
+              <input class="filter-input price-input" v-model="priceMin" placeholder="最低" type="number" @keyup.enter="doSearch()" />
+              <span class="price-dash">—</span>
+              <input class="filter-input price-input" v-model="priceMax" placeholder="最高" type="number" @keyup.enter="doSearch()" />
+            </div>
+          </div>
+
+          <div class="filter-actions">
+            <button class="btn-primary" @click="doSearch()">🔍 搜索</button>
+            <button class="btn-ghost" @click="resetSearch">重置</button>
           </div>
         </div>
+      </aside>
 
-        <div class="search-actions">
-          <button class="btn-search" @click="doSearch()">🔍 搜索</button>
-          <button class="btn-reset" @click="resetSearch" title="重置">重置</button>
+      <!-- Right Content: Results -->
+      <main class="content-area">
+
+        <!-- Loading -->
+        <div v-if="loading" class="loading-overlay">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">正在检索...</div>
         </div>
-      </div>
 
-      <!-- Loading -->
-      <div v-if="loading" class="loading-overlay">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">正在检索...</div>
-      </div>
-
-      <!-- Empty -->
-      <div v-else-if="!searchResult.data || !searchResult.data.length" class="empty-state">
-        <div class="empty-icon">📋</div>
-        <div class="empty-title">暂无数据</div>
-        <div class="empty-hint">请尝试调整搜索条件或关键词</div>
-      </div>
-
-      <!-- Table -->
-      <div class="table-wrapper" v-else>
-        <table class="result-table">
-          <thead>
-            <tr>
-              <th @click="sortBy('breed')" :class="{ sorted: sortKey === 'breed' }">
-                产品名称 <span class="sort-icon">{{ sortKey === 'breed' ? (sortDir === 'asc' ? '↑' : '↓') : '↕' }}</span>
-              </th>
-              <th @click="sortBy('spec')" :class="{ sorted: sortKey === 'spec' }">
-                规格 <span class="sort-icon">{{ sortKey === 'spec' ? (sortDir === 'asc' ? '↑' : '↓') : '↕' }}</span>
-              </th>
-              <th @click="sortBy('province')" :class="{ sorted: sortKey === 'province' }">
-                省份 <span class="sort-icon">{{ sortKey === 'province' ? (sortDir === 'asc' ? '↑' : '↓') : '↕' }}</span>
-              </th>
-              <th @click="sortBy('city')" :class="{ sorted: sortKey === 'city' }">
-                城市 <span class="sort-icon">{{ sortKey === 'city' ? (sortDir === 'asc' ? '↑' : '↓') : '↕' }}</span>
-              </th>
-              <th>区县</th>
-              <th>单位</th>
-              <th @click="sortBy('price')" :class="{ sorted: sortKey === 'price' }">
-                价格 <span class="sort-icon">{{ sortKey === 'price' ? (sortDir === 'asc' ? '↑' : '↓') : '↕' }}</span>
-              </th>
-              <th>含税价</th>
-              <th>日期</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in sortedData" :key="item.id || JSON.stringify(item)">
-              <td :title="item.breed" v-html="highlightKeyword(item.breed)"></td>
-              <td :title="item.spec">{{ item.spec || '—' }}</td>
-              <td>{{ item.province }}</td>
-              <td>{{ item.city }}</td>
-              <td>{{ item.county || '—' }}</td>
-              <td class="unit-cell">{{ item.unit }}</td>
-              <td class="price-cell">{{ fmtCell(item.price) }}</td>
-              <td class="tax-price-cell">{{ fmtCell(item.tax_price) }}</td>
-              <td class="date-cell">{{ item.date || '—' }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Pagination -->
-      <div class="pagination" v-if="searchResult.pages && searchResult.pages > 1">
-        <button class="page-btn nav" :disabled="searchPage <= 1" @click="prevPage()">‹</button>
-        <button
-          v-for="p in visiblePages"
-          :key="p"
-          class="page-btn"
-          :class="{ active: p === searchPage }"
-          @click="goToPage(p)"
-        >{{ p }}</button>
-        <button class="page-btn nav" :disabled="searchPage >= searchResult.pages" @click="nextPage()">›</button>
-        <div class="page-jump-wrap">
-          <span>跳至</span>
-          <input class="page-jump" v-model.number="jumpPage" @keyup.enter="goToPage(jumpPage)" type="number" min="1" :max="searchResult.pages" />
-          <span>页</span>
+        <!-- Empty -->
+        <div v-else-if="!searchResult.data || !searchResult.data.length" class="empty-state">
+          <div class="empty-icon">📋</div>
+          <div class="empty-title">暂无数据</div>
+          <div class="empty-hint">请尝试调整搜索条件或关键词</div>
         </div>
-      </div>
+
+        <!-- Table -->
+        <div class="table-card" v-else>
+          <div class="table-card-header">
+            <span class="table-count">共 <strong>{{ searchResult.total?.toLocaleString() }}</strong> 条结果</span>
+          </div>
+          <div class="table-scroll">
+            <table class="result-table">
+              <thead>
+                <tr>
+                  <th @click="sortBy('breed')" :class="{ sorted: sortKey === 'breed' }">
+                    产品名称 <span class="sort-icon">{{ sortKey === 'breed' ? (sortDir === 'asc' ? '↑' : '↓') : '↕' }}</span>
+                  </th>
+                  <th @click="sortBy('spec')" :class="{ sorted: sortKey === 'spec' }">
+                    规格 <span class="sort-icon">{{ sortKey === 'spec' ? (sortDir === 'asc' ? '↑' : '↓') : '↕' }}</span>
+                  </th>
+                  <th @click="sortBy('province')" :class="{ sorted: sortKey === 'province' }">
+                    省份 <span class="sort-icon">{{ sortKey === 'province' ? (sortDir === 'asc' ? '↑' : '↓') : '↕' }}</span>
+                  </th>
+                  <th @click="sortBy('city')" :class="{ sorted: sortKey === 'city' }">
+                    城市 <span class="sort-icon">{{ sortKey === 'city' ? (sortDir === 'asc' ? '↑' : '↓') : '↕' }}</span>
+                  </th>
+                  <th>区县</th>
+                  <th>单位</th>
+                  <th @click="sortBy('price')" :class="{ sorted: sortKey === 'price' }">
+                    价格 <span class="sort-icon">{{ sortKey === 'price' ? (sortDir === 'asc' ? '↑' : '↓') : '↕' }}</span>
+                  </th>
+                  <th>含税价</th>
+                  <th>日期</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in sortedData" :key="item.id || JSON.stringify(item)">
+                  <td :title="item.breed" v-html="highlightKeyword(item.breed)"></td>
+                  <td :title="item.spec">{{ item.spec || '—' }}</td>
+                  <td>{{ item.province }}</td>
+                  <td>{{ item.city }}</td>
+                  <td>{{ item.county || '—' }}</td>
+                  <td class="unit-cell">{{ item.unit }}</td>
+                  <td class="price-cell">{{ fmtCell(item.price) }}</td>
+                  <td class="tax-price-cell">{{ fmtCell(item.tax_price) }}</td>
+                  <td class="date-cell">{{ item.date || '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="pagination" v-if="searchResult.pages && searchResult.pages > 1">
+            <button class="page-btn nav" :disabled="searchPage <= 1" @click="prevPage()">‹</button>
+            <button
+              v-for="p in visiblePages"
+              :key="p"
+              class="page-btn"
+              :class="{ active: p === searchPage }"
+              @click="goToPage(p)"
+            >{{ p }}</button>
+            <button class="page-btn nav" :disabled="searchPage >= searchResult.pages" @click="nextPage()">›</button>
+            <div class="page-jump-wrap">
+              <span>跳至</span>
+              <input class="page-jump" v-model.number="jumpPage" @keyup.enter="goToPage(jumpPage)" type="number" min="1" :max="searchResult.pages" />
+              <span>页</span>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   </div>
 
@@ -190,7 +193,7 @@ const loading = ref(false)
 const searchResult = ref({})
 const cityOptions = ref([])
 const countyOptions = ref([])
-const provinceCityMap = ref({})  // province -> [{key, count}]
+const provinceCityMap = ref({})
 const jumpPage = ref(1)
 
 // Sort
@@ -200,75 +203,47 @@ const sortDir = ref('asc')
 // Toast
 const toast = ref({ show: false, msg: '' })
 
-// Chart instances
-
-
-// === Computed ===
-const filteredCities = computed(() => {
-  if (!searchProvince.value) return cityOptions.value
-  return provinceCityMap.value[searchProvince.value] || []
-})
-
-const filteredCounties = computed(() => {
-  if (!searchCity.value) return countyOptions.value
-  return countyOptions.value.filter(c => c.city === searchCity.value)
-})
-
-const sortedData = computed(() => {
-  if (!searchResult.value.data || !sortKey.value) return searchResult.value.data || []
-  return [...searchResult.value.data].sort((a, b) => {
-    const va = a[sortKey.value] ?? ''
-    const vb = b[sortKey.value] ?? ''
-    const cmp = typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb))
-    return sortDir.value === 'asc' ? cmp : -cmp
-  })
-})
-
-const visiblePages = computed(() => {
-  if (!searchResult.value.pages) return []
-  const total = searchResult.value.pages
-  const cur = searchPage.value
-  const pages = []
-  const delta = 2
-  for (let i = Math.max(1, cur - delta); i <= Math.min(total, cur + delta); i++) {
-    pages.push(i)
-  }
-  return pages
-})
-
-// === Helpers ===
-function fmtPrice(v) {
-  if (!v && v !== 0) return '0.00'
-  if (v >= 10000) return (v / 10000).toFixed(1) + '万'
-  return Number(v).toFixed(2)
-}
-
-function fmtCell(v) {
-  if (v == null || v === '') return '—'
-  const n = Number(v)
-  return isNaN(n) ? v : '¥' + n.toFixed(2)
-}
-
-function highlightKeyword(text) {
-  if (!text || !searchKeyword.value) return text
-  const kw = searchKeyword.value.trim()
-  if (!kw) return text
-  const re = new RegExp(`(${kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
-  return String(text).replace(re, '<span class="breed-match">$1</span>')
-}
-
 function showToast(msg) {
   toast.value = { show: true, msg }
   setTimeout(() => { toast.value.show = false }, 3000)
 }
 
-async function loadAPI(url) {
-  return axios.get(`${API}${url}`).then(r => r.data).catch(e => {
-    showToast('请求失败: ' + (e.message || '网络错误'))
-    return {}
-  })
-}
+// === Computed ===
+const filteredCities = computed(() => {
+  if (!searchProvince.value) return cityOptions.value
+  return cityOptions.value.filter(c => c.province === searchProvince.value)
+})
 
+const filteredCounties = computed(() => {
+  let list = countyOptions.value
+  if (searchProvince.value) list = list.filter(c => c.province === searchProvince.value)
+  if (searchCity.value) list = list.filter(c => c.city === searchCity.value)
+  return list
+})
+
+const sortedData = computed(() => {
+  const data = searchResult.value.data || []
+  if (!sortKey.value) return data
+  return [...data].sort((a, b) => {
+    let av = a[sortKey.value] ?? ''
+    let bv = b[sortKey.value] ?? ''
+    av = String(av).toLowerCase()
+    bv = String(bv).toLowerCase()
+    if (av < bv) return sortDir.value === 'asc' ? -1 : 1
+    if (av > bv) return sortDir.value === 'asc' ? 1 : -1
+    return 0
+  })
+})
+
+const visiblePages = computed(() => {
+  const total = searchResult.value.pages || 1
+  const cur = Number(searchPage.value)
+  const range = []
+  for (let i = Math.max(1, cur - 2); i <= Math.min(total, cur + 2); i++) range.push(i)
+  return range
+})
+
+// === Actions ===
 function sortBy(key) {
   if (sortKey.value === key) {
     sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
@@ -278,23 +253,54 @@ function sortBy(key) {
   }
 }
 
-function goToPage(p) {
-  if (!p || p < 1 || p > (searchResult.value.pages || 1)) return
-  jumpPage.value = p
-  searchPage.value = p
-  doSearch(p)
-}
-
-function nextPage() {
-  searchPage.value++
-  jumpPage.value = searchPage.value
-  doSearch(Number(searchPage.value))
+function onProvinceChange() {
+  searchCity.value = ''
+  searchCounty.value = ''
 }
 
 function prevPage() {
-  searchPage.value--
-  jumpPage.value = searchPage.value
+  if (searchPage.value <= 1) return
+  searchPage.value = String(Number(searchPage.value) - 1)
   doSearch(Number(searchPage.value))
+}
+
+function nextPage() {
+  if (searchPage.value >= searchResult.value.pages) return
+  searchPage.value = String(Number(searchPage.value) + 1)
+  doSearch(Number(searchPage.value))
+}
+
+function goToPage(p) {
+  if (p < 1 || p > (searchResult.value.pages || 1)) return
+  searchPage.value = String(p)
+  doSearch(Number(searchPage.value))
+}
+
+async function doSearch(pageOverride) {
+  if (!pageOverride) {
+    searchPage.value = '1'
+    jumpPage.value = 1
+    sortKey.value = ''
+    sortDir.value = 'asc'
+  }
+  loading.value = true
+  try {
+    const params = {}
+    if (searchKeyword.value.trim()) params.keyword = searchKeyword.value.trim()
+    if (searchProvince.value) params.province = searchProvince.value
+    if (searchCity.value) params.city = searchCity.value
+    if (searchCounty.value) params.county = searchCounty.value
+    if (priceMin.value) params.price_min = priceMin.value
+    if (priceMax.value) params.price_max = priceMax.value
+    params.page = pageOverride || Number(searchPage.value)
+    params.page_size = 20
+    const { data: res } = await axios.get(`${API}/search`, { params })
+    searchResult.value = res.data || {}
+  } catch (e) {
+    showToast('请求失败：' + (e.message || '网络错误'))
+  } finally {
+    loading.value = false
+  }
 }
 
 function resetSearch() {
@@ -304,67 +310,50 @@ function resetSearch() {
   searchCounty.value = ''
   priceMin.value = ''
   priceMax.value = ''
-  searchPage.value = 1
+  searchPage.value = '1'
+  jumpPage.value = 1
   sortKey.value = ''
   sortDir.value = 'asc'
   searchResult.value = {}
 }
 
-// === City/County Cascade ===
-function onProvinceChange() {
-  searchCity.value = ''
-  searchCounty.value = ''
+function highlightKeyword(text) {
+  if (!text || !searchKeyword.value.trim()) return text
+  const kw = searchKeyword.value.trim()
+  const regex = new RegExp(`(${kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+  return String(text).replace(regex, '<span class="breed-match">$1</span>')
 }
 
-// === Data Loading ===
+function fmtCell(v) {
+  if (v === null || v === undefined || v === '') return '—'
+  const n = Number(v)
+  if (isNaN(n)) return v
+  return n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+// === API ===
+async function loadAPI(url) {
+  try { return (await axios.get(url)).data } catch { return {} }
+}
+
 async function loadOverview() {
-  const data = await loadAPI('/api/stats/overview')
-  overview.value = data
+  const d = await loadAPI(`${API}/stats/overview`)
+  overview.value = d.data || { total_docs: 0, total_provinces: 0, total_cities: 0, by_province: [] }
 }
 
 async function loadCityOptions() {
-  const data = await loadAPI('/api/filter-options')
-  cityOptions.value = data.cities || []
-  countyOptions.value = data.counties || []
-  provinceCityMap.value = data.provinceCityMap || {}
-}
-
-async function doSearch(pageOverride) {
-  if (!pageOverride) {
-    searchPage.value = 1
-    jumpPage.value = 1
-  }
-  loading.value = true
-  const params = new URLSearchParams()
-  if (searchKeyword.value) params.append('keyword', searchKeyword.value)
-  if (searchProvince.value) params.append('province', searchProvince.value)
-  if (searchCity.value) params.append('city', searchCity.value)
-  if (searchCounty.value) params.append('county', searchCounty.value)
-  if (priceMin.value) params.append('price_min', priceMin.value)
-  if (priceMax.value) params.append('price_max', priceMax.value)
-  params.append('page', searchPage.value)
-  params.append('size', 20)
-  try {
-    const data = await loadAPI('/api/search?' + params.toString())
-    searchResult.value = data || {}
-  } finally {
-    loading.value = false
+  const d = await loadAPI(`${API}/filter-options`)
+  if (d.data) {
+    cityOptions.value = d.data.cities || []
+    countyOptions.value = d.data.counties || []
+    provinceCityMap.value = d.data.provinceCityMap || {}
   }
 }
 
-// === Charts ===
-// === Mount ===
-onMounted(async () => {
-  await loadOverview()
-  await Promise.all([loadCityOptions()])
+function onMount() {
+  await Promise.all([loadOverview(), loadCityOptions()])
+}
 
-  // Keyboard shortcut: / to focus search
-  document.addEventListener('keydown', e => {
-    if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
-      e.preventDefault()
-      document.querySelector('.input-kw')?.focus()
-    }
-  })
-})
+// Life
+onMounted(onMount)
 </script>
-
