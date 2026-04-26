@@ -493,20 +493,21 @@ function fmtCell(v) {
 }
 
 // Price highlight
-function getPriceClass(price) {
+function getPriceClass(price, avgPrice) {
   const n = Number(price)
-  if (isNaN(n) || !overview.value.avg_price) return ''
-  if (n > overview.value.avg_price * 1.5) return 'price-high'
-  if (n < overview.value.avg_price * 0.5) return 'price-low'
+  if (isNaN(n) || !avgPrice) return ''
+  if (n > avgPrice * 1.5) return 'price-high'
+  if (n < avgPrice * 0.5) return 'price-low'
   return ''
 }
 
 function getPriceBadge(item) {
   const n = Number(item.price)
-  if (isNaN(n) || !overview.value.avg_price) return null
-  if (n > overview.value.avg_price * 2) return { text: '异常高', cls: 'badge-danger' }
-  if (n > overview.value.avg_price * 1.5) return { text: '偏高', cls: 'badge-warning' }
-  if (n < overview.value.avg_price * 0.5) return { text: '异常低', cls: 'badge-blue' }
+  const av = Number(item.avg_price)
+  if (isNaN(n) || !av) return null
+  if (n > av * 2) return { text: '异常高', cls: 'badge-danger' }
+  if (n > av * 1.5) return { text: '偏高', cls: 'badge-warning' }
+  if (n < av * 0.5) return { text: '异常低', cls: 'badge-blue' }
   return null
 }
 
@@ -520,7 +521,7 @@ function getTaxDiffBadge(item) {
 }
 
 function getCellClass(key, item) {
-  if (key === 'price') return 'price-cell ' + getPriceClass(item.price)
+  if (key === 'price') return 'price-cell ' + getPriceClass(item.price, item.avg_price)
   if (key === 'tax_price') return 'tax-price-cell'
   if (key === 'unit') return 'unit-cell'
   if (key === 'date') return 'date-cell'
