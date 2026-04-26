@@ -30,17 +30,6 @@
       </div>
     </div>
 
-    <!-- Charts Row: Province TOP -->
-    <div class="charts-row halves">
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <div class="chart-card-title"><span class="icon">🗺️</span> 省份数据量 TOP10</div>
-          <div class="chart-card-badge">TOP 10</div>
-        </div>
-        <div id="provinceChart"></div>
-      </div>
-    </div>
-
     <!-- Search Section -->
     <div class="search-section">
       <div class="search-section-header">
@@ -184,7 +173,6 @@
 <script setup>
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import axios from 'axios'
-import * as echarts from 'echarts'
 import CustomSelect from './components/CustomSelect.vue'
 
 const API = 'http://localhost:5200'
@@ -213,7 +201,7 @@ const sortDir = ref('asc')
 const toast = ref({ show: false, msg: '' })
 
 // Chart instances
-let provinceChart
+
 
 // === Computed ===
 const filteredCities = computed(() => {
@@ -365,39 +353,11 @@ async function doSearch(pageOverride) {
 }
 
 // === Charts ===
-function renderProvinceChart() {
-  try {
-    const el = document.getElementById('provinceChart')
-    if (!el) return
-    if (!provinceChart) provinceChart = echarts.init(el)
-    const top10 = [...(overview.value.by_province || [])].sort((a, b) => b.count - a.count).slice(0, 10)
-    provinceChart.setOption({
-      tooltip: { trigger: 'axis', backgroundColor: '#1a2332', borderColor: '#1e3a5f', textStyle: { color: '#e2e8f0', fontSize: 12 }, axisPointer: { type: 'shadow', shadowStyle: { color: 'rgba(59,158,255,0.05)' } }, formatter: p => `<b>${p[0].name}</b><br/>数据量: <b style="color:#5cdbd3">${p[0].value.toLocaleString()}</b> 条` },
-      grid: { left: '3%', right: '4%', bottom: '3%', top: '3%', containLabel: true },
-      xAxis: { type: 'value', axisLabel: { color: '#64748b', fontSize: 10 }, splitLine: { lineStyle: { color: '#1e3a5f', type: 'dashed' } } },
-      yAxis: { type: 'category', data: top10.map(p => p.province).reverse(), axisLabel: { color: '#94a3b8', fontSize: 11 }, axisLine: { lineStyle: { color: '#1e3a5f' } }, axisTick: { show: false } },
-      series: [{
-        type: 'bar',
-        data: top10.map((p, i) => ({
-          value: p.count,
-          itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [{ offset: 0, color: '#1e5fa8' }, { offset: 1, color: '#3b9eff' }]), borderRadius: [0, 3, 3, 0] }
-        })).reverse(),
-        label: { show: true, position: 'right', formatter: p => p.value.toLocaleString(), fontSize: 10, color: '#94a3b8' },
-        barMaxWidth: 24
-      }]
-    }, true)
-  } catch(e) { console.warn('renderProvinceChart error:', e) }
-}
-
 // === Mount ===
 onMounted(async () => {
   await loadOverview()
-  await nextTick()
-  renderProvinceChart()
   await Promise.all([loadCityOptions()])
-  window.addEventListener('resize', () => {
-    provinceChart?.resize()
-  })
+
   // Keyboard shortcut: / to focus search
   document.addEventListener('keydown', e => {
     if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
