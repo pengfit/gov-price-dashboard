@@ -416,13 +416,15 @@ body {
   border-collapse: collapse;
   font-size: 13px;
   min-width: 900px;
+  table-layout: fixed;
+  overflow: hidden;
 }
 
 .result-table thead { background: linear-gradient(135deg, #f8fafc, #f1f5f9); }
 
 .result-table th {
   padding: 11px 14px;
-  text-align: left;
+  text-align: center;
   color: var(--text-2);
   font-weight: 600;
   font-size: 11px;
@@ -456,15 +458,28 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
   vertical-align: middle;
+  text-align: center;
 }
 
-.result-table td:first-child { font-weight: 600; color: var(--text); }
-.result-table td:nth-child(2) { max-width: 220px; color: var(--text-2); font-size: 12px; }
+.result-table td:first-child { font-weight: 600; color: var(--text); text-align: center; }
 
-.result-table td.price-cell { white-space: nowrap; vertical-align: top; padding-top: 10px !important; }
-.result-table td.tax-price-cell { white-space: nowrap; vertical-align: top; padding-top: 10px !important; color: var(--text-2) !important; font-size: 12px; }
-.result-table td.unit-cell { color: var(--text-3) !important; font-size: 11px !important; white-space: nowrap; vertical-align: top; padding-top: 10px !important; }
-.result-table td.date-cell { color: var(--text-3) !important; font-size: 12px; white-space: nowrap; }
+/* 价格列居中 */
+.result-table td.price-cell { white-space: nowrap; vertical-align: top; padding-top: 10px !important; text-align: center; }
+.result-table td.tax-price-cell { white-space: nowrap; vertical-align: top; padding-top: 10px !important; text-align: center; color: var(--text-2) !important; font-size: 12px; }
+/* 单位列居中 */
+.result-table td.unit-cell {
+  color: var(--text-3) !important;
+  font-size: 11px !important;
+  white-space: nowrap;
+  vertical-align: middle;
+  text-align: center;
+}
+/* 日期列居中 */
+.result-table td.date-cell { color: var(--text-3) !important; font-size: 12px; white-space: nowrap; text-align: center; }
+
+/* 行hover：淡蓝高亮 */
+.data-row:hover { background: rgba(59, 130, 246, 0.06) !important; }
+.data-row:hover td { opacity: 1 !important; }
 
 /* === Pagination === */
 .pagination {
@@ -679,6 +694,7 @@ body {
   color: var(--text);
   font-family: 'DIN Alternate', 'Helvetica Neue', Arial, sans-serif;
   line-height: 1.2;
+  text-align: center;
 }
 
 .price-tax {
@@ -687,6 +703,7 @@ body {
   font-weight: 400;
   margin-top: 1px;
   font-family: 'DIN Alternate', 'Helvetica Neue', Arial, sans-serif;
+  text-align: center;
 }
 
 .price-change {
@@ -694,6 +711,7 @@ body {
   font-weight: 600;
   margin-top: 2px;
   font-family: 'DIN Alternate', 'Helvetica Neue', Arial, sans-serif;
+  text-align: center;
 }
 .change-up { color: var(--danger); }
 .change-down { color: var(--success); }
@@ -922,7 +940,7 @@ body {
 .table-count strong { color: var(--primary); font-weight: 700; }
 
 /* === Province bar inline (new v-for structure) === */
-.breed-cell { text-align: left; }
+.breed-cell { text-align: center; }
 .breed-name {
   display: block;
   font-weight:  600;
@@ -933,6 +951,7 @@ body {
 .breed-meta {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 3px;
   margin-top: 2px;
 }
