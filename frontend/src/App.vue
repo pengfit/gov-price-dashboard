@@ -92,7 +92,12 @@
       </div>
 
       <!-- Results Table -->
-      <table class="result-table" v-if="searchResult.data && searchResult.data.length">
+      <div v-if="loading" class="loading-overlay">正在加载...</div>
+      <div v-else-if="!searchResult.data || !searchResult.data.length" class="empty-state">
+        <div class="empty-icon">📋</div>
+        <div>暂无数据，请尝试调整搜索条件</div>
+      </div>
+      <table class="result-table" v-else>
         <thead>
           <tr>
             <th>产品名称</th>
@@ -153,6 +158,7 @@ const searchCounty = ref('')
 const priceMin = ref('')
 const priceMax = ref('')
 const searchPage = ref(1)
+const loading = ref(false)
 const searchResult = ref({})
 const cityOptions = ref([])
 const countyOptions = ref([])
@@ -211,6 +217,7 @@ function prevPage() {
 
 async function doSearch(pageOverride) {
   searchPage.value = pageOverride || 1
+  loading.value = true
   const params = new URLSearchParams()
   if (searchKeyword.value) params.append('keyword', searchKeyword.value)
   if (searchProvince.value) params.append('province', searchProvince.value)
@@ -220,8 +227,12 @@ async function doSearch(pageOverride) {
   if (priceMax.value) params.append('price_max', priceMax.value)
   params.append('page', searchPage.value)
   params.append('size', 20)
-  const data = await loadAPI('/api/search?' + params.toString())
-  searchResult.value = data || {}
+  try {
+    const data = await loadAPI('/api/search?' + params.toString())
+    searchResult.value = data || {}
+  } finally {
+    loading.value = false
+  }
 }
 
 function renderDistChart() {
