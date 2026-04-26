@@ -269,6 +269,34 @@ body {
   letter-spacing: 0.3px;
 }
 
+.trend-select {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 5px 28px 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: inherit;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.trend-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.trend-select option {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
 /* === Search Section === */
 .search-section {
   background: var(--surface);
@@ -344,6 +372,12 @@ body {
 .search-select:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.search-select option,
+.search-select optgroup {
+  background: var(--surface-2);
+  color: var(--text);
 }
 
 .search-input::placeholder { color: var(--text-3); }
