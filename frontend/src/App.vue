@@ -295,7 +295,7 @@ async function doSearch(pageOverride) {
     params.page = pageOverride || Number(searchPage.value)
     params.page_size = 20
     const { data: res } = await axios.get(`${API}/search`, { params })
-    searchResult.value = res.data || {}
+    searchResult.value = res || {}
   } catch (e) {
     showToast('请求失败：' + (e.message || '网络错误'))
   } finally {
@@ -338,15 +338,15 @@ async function loadAPI(url) {
 
 async function loadOverview() {
   const d = await loadAPI(`${API}/stats/overview`)
-  overview.value = d.data || { total_docs: 0, total_provinces: 0, total_cities: 0, by_province: [] }
+  overview.value = d || { total_docs: 0, total_provinces: 0, total_cities: 0, by_province: [] }
 }
 
 async function loadCityOptions() {
   const d = await loadAPI(`${API}/filter-options`)
-  if (d.data) {
-    cityOptions.value = d.data.cities || []
-    countyOptions.value = d.data.counties || []
-    provinceCityMap.value = d.data.provinceCityMap || {}
+  if (d) {
+    cityOptions.value = d.cities || []
+    countyOptions.value = d.counties || []
+    provinceCityMap.value = d.provinceCityMap || {}
   }
 }
 
