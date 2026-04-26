@@ -216,52 +216,37 @@
                   class="data-row"
                   :class="{ 'stale-row': isStale(item.date) }"
                 >
-                  <!-- Province color bar (frozen col) -->
-                  <td class="province-bar-cell">
-                    <div class="province-bar" :style="{ background: getProvinceColor(item.province) }"></div>
-                    <span
-                      class="breed-text"
-                      :title="item.breed"
-                      v-html="highlightKeyword(item.breed)"
-                    ></span>
-                  </td>
-
-                  <!-- Spec -->
-                  <td class="td-spec" :title="item.spec">
-                    <span class="spec-text">{{ item.spec || '—' }}</span>
-                  </td>
-
-                  <!-- Province -->
-                  <td class="td-province">{{ item.province }}</td>
-
-                  <!-- City -->
-                  <td class="td-city">{{ item.city }}</td>
-
-                  <!-- County -->
-                  <td class="td-county">{{ item.county || '—' }}</td>
-
-                  <!-- Unit -->
-                  <td class="unit-cell">{{ item.unit }}</td>
-
-                  <!-- Price (highlighted) -->
-                  <td class="price-cell" :class="getPriceClass(item.price)">
-                    <span class="price-value">{{ fmtCell(item.price) }}</span>
-                    <span v-if="getPriceBadge(item)" class="price-badge" :class="getPriceBadge(item).cls">
-                      {{ getPriceBadge(item).text }}
-                    </span>
-                  </td>
-
-                  <!-- Tax Price -->
-                  <td class="tax-price-cell">
-                    <span>{{ fmtCell(item.tax_price) }}</span>
-                    <span v-if="getTaxDiffBadge(item)" class="tax-badge">
-                      {{ getTaxDiffBadge(item) }}
-                    </span>
-                  </td>
-
-                  <!-- Date -->
-                  <td class="date-cell" :class="{ 'stale-date': isStale(item.date) }">
-                    {{ item.date || '—' }}
+                  <td
+                    v-for="col in visibleColumns"
+                    :key="col.key"
+                    :class="getCellClass(col.key, item)"
+                    :title="col.key === 'breed' ? item.breed : col.key === 'spec' ? item.spec : undefined"
+                  >
+                    <template v-if="col.key === 'breed'">
+                      <div class="province-bar-inline">
+                        <div class="province-bar" :style="{ background: getProvinceColor(item.province) }"></div>
+                        <span v-html="highlightKeyword(item.breed)"></span>
+                      </div>
+                    </template>
+                    <template v-else-if="col.key === 'spec'">
+                      <span class="spec-text">{{ item.spec || '—' }}</span>
+                    </template>
+                    <template v-else-if="col.key === 'province'">{{ item.province }}</template>
+                    <template v-else-if="col.key === 'city'">{{ item.city }}</template>
+                    <template v-else-if="col.key === 'county'">{{ item.county || '—' }}</template>
+                    <template v-else-if="col.key === 'unit'">{{ item.unit }}</template>
+                    <template v-else-if="col.key === 'price'">
+                      <span class="price-value">{{ fmtCell(item.price) }}</span>
+                      <span v-if="getPriceBadge(item)" class="price-badge" :class="getPriceBadge(item).cls">{{ getPriceBadge(item).text }}</span>
+                    </template>
+                    <template v-else-if="col.key === 'tax_price'">
+                      <span>{{ fmtCell(item.tax_price) }}</span>
+                      <span v-if="getTaxDiffBadge(item)" class="tax-badge">{{ getTaxDiffBadge(item) }}</span>
+                    </template>
+                    <template v-else-if="col.key === 'date'">
+                      <span :class="{ 'stale-date': isStale(item.date) }">{{ item.date || '—' }}</span>
+                    </template>
+                    <template v-else>{{ item[col.key] ?? '—' }}</template>
                   </td>
                 </tr>
               </tbody>
@@ -532,6 +517,18 @@ function getTaxDiffBadge(item) {
   const diff = (tp - p) / p
   if (diff > 0.2) return '含税溢价 ' + (diff * 100).toFixed(0) + '%'
   return null
+}
+
+function getCellClass(key, item) {
+  if (key === 'price') return 'price-cell ' + getPriceClass(item.price)
+  if (key === 'tax_price') return 'tax-price-cell'
+  if (key === 'unit') return 'unit-cell'
+  if (key === 'date') return 'date-cell'
+  if (key === 'spec') return 'td-spec'
+  if (key === 'province') return 'td-province'
+  if (key === 'city') return 'td-city'
+  if (key === 'county') return 'td-county'
+  return ''
 }
 
 function isStale(dateStr) {
