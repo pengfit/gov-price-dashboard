@@ -51,6 +51,8 @@ body {
   overflow-x: hidden;
 }
 
+#app { min-height: 100vh; }
+
 /* === Scrollbar === */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--surface); }
@@ -62,6 +64,8 @@ body {
   max-width: 1560px;
   margin: 0 auto;
   padding: 20px 24px 60px;
+  min-height: 100vh;
+  box-sizing: border-box;
 }
 
 /* === Header === */
@@ -622,6 +626,10 @@ body {
 
 /* === Chart Tooltip Override === */
 .chart-card [id$="Chart"] { width: 100%; }
+#distChart { height: 260px; width: 100%; }
+#provinceChart { height: 260px; width: 100%; }
+#topChart { height: 280px; width: 100%; }
+#trendChart { height: 250px; width: 100%; }
 
 /* === Responsive === */
 @media (max-width: 1200px) {

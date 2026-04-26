@@ -434,86 +434,94 @@ async function doSearch(pageOverride) {
 
 // === Charts ===
 function renderDistChart() {
-  const el = document.getElementById('distChart')
-  if (!el) return
-  if (!distChart) distChart = echarts.init(el)
-  const raw = priceDist.value
-  if (!raw || !raw.length) return
-  const colors = ['#3b9eff','#5cdbd3','#34d399','#fbbf24','#f87171','#a78bfa','#fb923c','#38bdf8','#4ade80','#facc15']
-  const data = raw.map((d, i) => ({ name: d.range || '未知', value: d.count, itemStyle: { color: colors[i % colors.length] } }))
-  distChart.setOption({
-    tooltip: { trigger: 'item', backgroundColor: '#1a2332', borderColor: '#1e3a5f', textStyle: { color: '#e2e8f0', fontSize: 12 }, formatter: p => `<b>${p.name}</b><br/>数量: <b style="color:#5cdbd3">${p.value.toLocaleString()}</b> 条<br/>占比: <b>${p.percent.toFixed(1)}%</b>` },
-    legend: { orient: 'horizontal', bottom: 0, textStyle: { color: '#94a3b8', fontSize: 11 }, pageTextStyle: { color: '#94a3b8' } },
-    series: [{ type: 'pie', radius: ['38%', '68%'], center: ['50%', '45%'], avoidLabelOverlap: true, itemStyle: { borderColor: '#0f172a', borderWidth: 2 }, label: { show: true, formatter: '{b}\n{d}%', fontSize: 10, color: '#94a3b8' }, emphasis: { scale: true, scaleSize: 6 }, data }]
-  }, true)
+  try {
+    const el = document.getElementById('distChart')
+    if (!el) return
+    if (!distChart) distChart = echarts.init(el)
+    const raw = priceDist.value
+    if (!raw || !raw.length) return
+    const colors = ['#3b9eff','#5cdbd3','#34d399','#fbbf24','#f87171','#a78bfa','#fb923c','#38bdf8','#4ade80','#facc15']
+    const data = raw.map((d, i) => ({ name: d.range || '未知', value: d.count, itemStyle: { color: colors[i % colors.length] } }))
+    distChart.setOption({
+      tooltip: { trigger: 'item', backgroundColor: '#1a2332', borderColor: '#1e3a5f', textStyle: { color: '#e2e8f0', fontSize: 12 }, formatter: p => `<b>${p.name}</b><br/>数量: <b style="color:#5cdbd3">${p.value.toLocaleString()}</b> 条<br/>占比: <b>${p.percent.toFixed(1)}%</b>` },
+      legend: { orient: 'horizontal', bottom: 0, textStyle: { color: '#94a3b8', fontSize: 11 }, pageTextStyle: { color: '#94a3b8' } },
+      series: [{ type: 'pie', radius: ['38%', '68%'], center: ['50%', '45%'], avoidLabelOverlap: true, itemStyle: { borderColor: '#0f172a', borderWidth: 2 }, label: { show: true, formatter: '{b}\n{d}%', fontSize: 10, color: '#94a3b8' }, emphasis: { scale: true, scaleSize: 6 }, data }]
+    }, true)
+  } catch(e) { console.warn('renderDistChart error:', e) }
 }
 
 function renderProvinceChart() {
-  const el = document.getElementById('provinceChart')
-  if (!el) return
-  if (!provinceChart) provinceChart = echarts.init(el)
-  const top10 = [...(overview.value.by_province || [])].sort((a, b) => b.count - a.count).slice(0, 10)
-  provinceChart.setOption({
-    tooltip: { trigger: 'axis', backgroundColor: '#1a2332', borderColor: '#1e3a5f', textStyle: { color: '#e2e8f0', fontSize: 12 }, axisPointer: { type: 'shadow', shadowStyle: { color: 'rgba(59,158,255,0.05)' } }, formatter: p => `<b>${p[0].name}</b><br/>数据量: <b style="color:#5cdbd3">${p[0].value.toLocaleString()}</b> 条` },
-    grid: { left: '3%', right: '4%', bottom: '3%', top: '3%', containLabel: true },
-    xAxis: { type: 'value', axisLabel: { color: '#64748b', fontSize: 10 }, splitLine: { lineStyle: { color: '#1e3a5f', type: 'dashed' } } },
-    yAxis: { type: 'category', data: top10.map(p => p.province).reverse(), axisLabel: { color: '#94a3b8', fontSize: 11 }, axisLine: { lineStyle: { color: '#1e3a5f' } }, axisTick: { show: false } },
-    series: [{
-      type: 'bar',
-      data: top10.map((p, i) => ({
-        value: p.count,
-        itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [{ offset: 0, color: '#1e5fa8' }, { offset: 1, color: '#3b9eff' }]), borderRadius: [0, 3, 3, 0] }
-      })).reverse(),
-      label: { show: true, position: 'right', formatter: p => p.value.toLocaleString(), fontSize: 10, color: '#94a3b8' },
-      barMaxWidth: 24
-    }]
-  }, true)
+  try {
+    const el = document.getElementById('provinceChart')
+    if (!el) return
+    if (!provinceChart) provinceChart = echarts.init(el)
+    const top10 = [...(overview.value.by_province || [])].sort((a, b) => b.count - a.count).slice(0, 10)
+    provinceChart.setOption({
+      tooltip: { trigger: 'axis', backgroundColor: '#1a2332', borderColor: '#1e3a5f', textStyle: { color: '#e2e8f0', fontSize: 12 }, axisPointer: { type: 'shadow', shadowStyle: { color: 'rgba(59,158,255,0.05)' } }, formatter: p => `<b>${p[0].name}</b><br/>数据量: <b style="color:#5cdbd3">${p[0].value.toLocaleString()}</b> 条` },
+      grid: { left: '3%', right: '4%', bottom: '3%', top: '3%', containLabel: true },
+      xAxis: { type: 'value', axisLabel: { color: '#64748b', fontSize: 10 }, splitLine: { lineStyle: { color: '#1e3a5f', type: 'dashed' } } },
+      yAxis: { type: 'category', data: top10.map(p => p.province).reverse(), axisLabel: { color: '#94a3b8', fontSize: 11 }, axisLine: { lineStyle: { color: '#1e3a5f' } }, axisTick: { show: false } },
+      series: [{
+        type: 'bar',
+        data: top10.map((p, i) => ({
+          value: p.count,
+          itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [{ offset: 0, color: '#1e5fa8' }, { offset: 1, color: '#3b9eff' }]), borderRadius: [0, 3, 3, 0] }
+        })).reverse(),
+        label: { show: true, position: 'right', formatter: p => p.value.toLocaleString(), fontSize: 10, color: '#94a3b8' },
+        barMaxWidth: 24
+      }]
+    }, true)
+  } catch(e) { console.warn('renderProvinceChart error:', e) }
 }
 
 function renderTopChart() {
-  const el = document.getElementById('topChart')
-  if (!el) return
-  if (!topChart) topChart = echarts.init(el)
-  const data = topProducts.value
-  if (!data || !data.length) return
-  topChart.setOption({
-    tooltip: { trigger: 'axis', backgroundColor: '#1a2332', borderColor: '#1e3a5f', textStyle: { color: '#e2e8f0', fontSize: 12 }, axisPointer: { type: 'shadow' }, formatter: p => `<b>${p[0].name}</b><br/>数据量: <b style="color:#5cdbd3">${p[0].value.toLocaleString()}</b> 条` },
-    grid: { left: '3%', right: '4%', bottom: '12%', top: '3%', containLabel: true },
-    xAxis: { type: 'category', data: data.map(p => p.breed).reverse(), axisLabel: { rotate: 35, fontSize: 10, interval: 0, color: '#94a3b8' }, axisLine: { lineStyle: { color: '#1e3a5f' } }, axisTick: { show: false } },
-    yAxis: { type: 'value', axisLabel: { color: '#64748b', fontSize: 10 }, splitLine: { lineStyle: { color: '#1e3a5f', type: 'dashed' } } },
-    series: [{
-      type: 'bar',
-      data: data.map((p, i) => ({
-        value: p.count,
-        itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#2a9d8f' }, { offset: 1, color: '#5cdbd3' }]), borderRadius: [3, 3, 0, 0] }
-      })).reverse(),
-      label: { show: true, position: 'top', fontSize: 9, color: '#64748b', formatter: p => p.value >= 1000 ? (p.value/1000).toFixed(0)+'k' : p.value },
-      barMaxWidth: 18
-    }]
-  }, true)
+  try {
+    const el = document.getElementById('topChart')
+    if (!el) return
+    if (!topChart) topChart = echarts.init(el)
+    const data = topProducts.value
+    if (!data || !data.length) return
+    topChart.setOption({
+      tooltip: { trigger: 'axis', backgroundColor: '#1a2332', borderColor: '#1e3a5f', textStyle: { color: '#e2e8f0', fontSize: 12 }, axisPointer: { type: 'shadow' }, formatter: p => `<b>${p[0].name}</b><br/>数据量: <b style="color:#5cdbd3">${p[0].value.toLocaleString()}</b> 条` },
+      grid: { left: '3%', right: '4%', bottom: '12%', top: '3%', containLabel: true },
+      xAxis: { type: 'category', data: data.map(p => p.breed).reverse(), axisLabel: { rotate: 35, fontSize: 10, interval: 0, color: '#94a3b8' }, axisLine: { lineStyle: { color: '#1e3a5f' } }, axisTick: { show: false } },
+      yAxis: { type: 'value', axisLabel: { color: '#64748b', fontSize: 10 }, splitLine: { lineStyle: { color: '#1e3a5f', type: 'dashed' } } },
+      series: [{
+        type: 'bar',
+        data: data.map((p, i) => ({
+          value: p.count,
+          itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#2a9d8f' }, { offset: 1, color: '#5cdbd3' }]), borderRadius: [3, 3, 0, 0] }
+        })).reverse(),
+        label: { show: true, position: 'top', fontSize: 9, color: '#64748b', formatter: p => p.value >= 1000 ? (p.value/1000).toFixed(0)+'k' : p.value },
+        barMaxWidth: 18
+      }]
+    }, true)
+  } catch(e) { console.warn('renderTopChart error:', e) }
 }
 
 function renderTrendChart() {
-  const el = document.getElementById('trendChart')
-  if (!el) return
-  if (!trendChart) trendChart = echarts.init(el)
-  const months = trendData.value.map(d => d.month)
-  const avgs = trendData.value.map(d => d.avg_price)
-  const counts = trendData.value.map(d => d.count)
-  trendChart.setOption({
-    tooltip: { trigger: 'axis', backgroundColor: '#1a2332', borderColor: '#1e3a5f', textStyle: { color: '#e2e8f0', fontSize: 12 }, formatter: p => `<b>${p[0].name}</b><br/><span style="color:#3b9eff">均价:</span> <b>¥${p[0].value || '-'}</b><br/><span style="color:#34d399">数量:</span> <b>${p[1]?.value?.toLocaleString() || '-'}</b> 条` },
-    legend: { data: ['均价', '数量'], bottom: 0, textStyle: { color: '#94a3b8', fontSize: 10 }, icon: 'roundRect' },
-    grid: { left: '3%', right: '4%', bottom: '18%', top: '5%', containLabel: true },
-    xAxis: { type: 'category', data: months, axisLabel: { color: '#94a3b8', fontSize: 10 }, axisLine: { lineStyle: { color: '#1e3a5f' } }, axisTick: { show: false }, splitLine: { show: false } },
-    yAxis: [
-      { name: '均价(¥)', nameTextStyle: { color: '#64748b', fontSize: 9 }, type: 'value', axisLabel: { color: '#64748b', fontSize: 9, formatter: v => v >= 1000 ? (v/1000).toFixed(0)+'k' : v }, splitLine: { lineStyle: { color: '#1e3a5f', type: 'dashed' } } },
-      { name: '数量', nameTextStyle: { color: '#64748b', fontSize: 9 }, type: 'value', axisLabel: { color: '#64748b', fontSize: 9 }, splitLine: { show: false } }
-    ],
-    series: [
-      { name: '均价', type: 'line', data: avgs, smooth: 0.4, color: '#3b9eff', symbol: 'circle', symbolSize: 5, lineStyle: { width: 2 }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(59,158,255,0.2)' }, { offset: 1, color: 'rgba(59,158,255,0)' }]) } },
-      { name: '数量', type: 'bar', data: counts, color: 'rgba(52,211,153,0.6)', yAxisIndex: 1, barMaxWidth: 16 }
-    ]
-  }, true)
+  try {
+    const el = document.getElementById('trendChart')
+    if (!el) return
+    if (!trendChart) trendChart = echarts.init(el)
+    const months = trendData.value.map(d => d.month)
+    const avgs = trendData.value.map(d => d.avg_price)
+    const counts = trendData.value.map(d => d.count)
+    trendChart.setOption({
+      tooltip: { trigger: 'axis', backgroundColor: '#1a2332', borderColor: '#1e3a5f', textStyle: { color: '#e2e8f0', fontSize: 12 }, formatter: p => `<b>${p[0].name}</b><br/><span style="color:#3b9eff">均价:</span> <b>¥${p[0].value || '-'}</b><br/><span style="color:#34d399">数量:</span> <b>${p[1]?.value?.toLocaleString() || '-'}</b> 条` },
+      legend: { data: ['均价', '数量'], bottom: 0, textStyle: { color: '#94a3b8', fontSize: 10 }, icon: 'roundRect' },
+      grid: { left: '3%', right: '4%', bottom: '18%', top: '5%', containLabel: true },
+      xAxis: { type: 'category', data: months, axisLabel: { color: '#94a3b8', fontSize: 10 }, axisLine: { lineStyle: { color: '#1e3a5f' } }, axisTick: { show: false }, splitLine: { show: false } },
+      yAxis: [
+        { name: '均价(¥)', nameTextStyle: { color: '#64748b', fontSize: 9 }, type: 'value', axisLabel: { color: '#64748b', fontSize: 9, formatter: v => v >= 1000 ? (v/1000).toFixed(0)+'k' : v }, splitLine: { lineStyle: { color: '#1e3a5f', type: 'dashed' } } },
+        { name: '数量', nameTextStyle: { color: '#64748b', fontSize: 9 }, type: 'value', axisLabel: { color: '#64748b', fontSize: 9 }, splitLine: { show: false } }
+      ],
+      series: [
+        { name: '均价', type: 'line', data: avgs, smooth: 0.4, color: '#3b9eff', symbol: 'circle', symbolSize: 5, lineStyle: { width: 2 }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(59,158,255,0.2)' }, { offset: 1, color: 'rgba(59,158,255,0)' }]) } },
+        { name: '数量', type: 'bar', data: counts, color: 'rgba(52,211,153,0.6)', yAxisIndex: 1, barMaxWidth: 16 }
+      ]
+    }, true)
+  } catch(e) { console.warn('renderTrendChart error:', e) }
 }
 
 // === Mount ===
