@@ -137,13 +137,6 @@
         </div>
       </div>
 
-      <!-- Results Meta -->
-      <div class="result-meta" v-if="searchResult.total">
-        共找到 <strong>{{ searchResult.total.toLocaleString() }}</strong> 条结果，
-        当前第 <strong>{{ searchPage }}</strong> / {{ searchResult.pages || 1 }} 页
-        <span>({{ searchResult.size || 20 }}条/页)</span>
-      </div>
-
       <!-- Loading -->
       <div v-if="loading" class="loading-overlay">
         <div class="loading-spinner"></div>
@@ -210,7 +203,11 @@
           @click="goToPage(p)"
         >{{ p }}</button>
         <button class="page-btn nav" :disabled="searchPage >= searchResult.pages" @click="nextPage()">›</button>
-        <span class="page-info">跳至 <input class="page-jump" v-model.number="jumpPage" @keyup.enter="goToPage(jumpPage)" type="number" :min="1" :max="searchResult.pages" /> 页</span>
+        <div class="page-jump-wrap">
+          <span>跳至</span>
+          <input class="page-jump" v-model.number="jumpPage" @keyup.enter="goToPage(jumpPage)" type="number" min="1" :max="searchResult.pages" />
+          <span>页</span>
+        </div>
       </div>
     </div>
   </div>
