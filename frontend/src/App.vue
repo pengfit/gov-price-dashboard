@@ -20,15 +20,7 @@
           <span class="meta-value">{{ overview.total_cities }}</span>
         </span>
         <span class="meta-sep">|</span>
-        <span class="meta-item">
-          <span class="meta-label">均价</span>
-          <span class="meta-value accent">{{ overview.avg_price > 0 ? '¥' + fmtCell(overview.avg_price) : '—' }}</span>
-        </span>
-        <span class="meta-sep">|</span>
-        <span class="meta-item meta-refresh" @click="refreshAll" title="刷新数据">
-          <span class="icon">🔄</span>
-          <span class="meta-label">刷新</span>
-        </span>
+
       </div>
     </header>
 
@@ -40,13 +32,6 @@
         placeholder="🔍 产品名称 / 关键词"
         @keyup.enter="doSearch()"
         @input="onKeywordInput"
-      />
-      <CustomSelect
-        v-model="searchProvince"
-        :options="overview.by_province.map(p => ({ key: p.province, count: p.count }))"
-        placeholder="全部省份"
-        class="filter-bar-select"
-        @change="() => { onProvinceChange(); doSearch(); }"
       />
       <button class="btn-more" @click="showDrawer = true">更多筛选 ▸</button>
 
@@ -76,17 +61,6 @@
       </div>
     </div>
 
-    <!-- Search History -->
-    <div class="search-history-bar" v-if="searchHistory.length && !searchKeyword">
-      <span
-        v-for="h in searchHistory.slice(0,8)"
-        :key="h"
-        class="history-chip"
-        @click="searchKeyword = h; doSearch()"
-      >{{ h }}</span>
-      <span class="history-clear" @click="clearHistory()">清空历史</span>
-    </div>
-
     <!-- Filter Drawer (slide-in from right) -->
       <Transition name="drawer">
         <div class="drawer-overlay" v-if="showDrawer" @click.self="showDrawer = false">
@@ -96,6 +70,16 @@
               <span class="drawer-close" @click="showDrawer = false">✕</span>
             </div>
             <div class="drawer-body">
+              <div class="filter-group">
+                <label class="filter-label">省份</label>
+                <CustomSelect
+                  v-model="searchProvince"
+                  :options="overview.by_province.map(p => ({ key: p.province, count: p.count }))"
+                  placeholder="全部省份"
+                  :searchable="true"
+                  @change="() => { onProvinceChange(); doSearch(); }"
+                />
+              </div>
               <div class="filter-group">
                 <label class="filter-label">城市</label>
                 <CustomSelect
@@ -115,6 +99,18 @@
                   :searchable="true"
                 />
               </div>
+              <div class="filter-group">
+                <label class="filter-label">搜索历史</label>
+                <div class="search-history-bar" v-if="searchHistory.length && !searchKeyword">
+                  <span
+                    v-for="h in searchHistory.slice(0,8)"
+                    :key="h"
+                    class="history-chip"
+                    @click="searchKeyword = h; doSearch()"
+                  >{{ h }}</span>
+                  <span class="history-clear" @click="clearHistory()">清空历史</span>
+                </div>
+              </div>
             </div>
             <div class="drawer-footer">
               <button class="btn-primary" @click="() => { showDrawer = false; doSearch(); }">🔍 确定</button>
@@ -128,41 +124,6 @@
       <main class="content-area">
 
         <!-- Toolbar (standalone, outside Transition) -->
-        <div class="toolbar-wrap" v-if="searchResult.data && searchResult.data.length">
-          <div class="toolbar">
-            <div class="toolbar-left">
-              <span class="table-count">
-                <strong>{{ pageStart }}‑{{ pageEnd }}</strong>
-                / {{ searchResult.total?.toLocaleString() }} 条
-              </span>
-            </div>
-            <div class="toolbar-right">
-              <!-- View toggle -->
-              <div class="view-tabs">
-                <button class="view-tab" :class="{ active: !showChartView }" @click="showChartView = false">📋 列表</button>
-                <button class="view-tab" :class="{ active: showChartView }" @click="showChartView = true; loadChartData(true)">📈 图表</button>
-              </div>
-              <!-- Column config -->
-              <div class="col-config-wrap" ref="colConfigRef">
-                <button class="toolbar-btn" @click="toggleColConfig" title="列配置">
-                  📋 列
-                </button>
-                <div class="col-config-dropdown" v-if="showColConfig">
-                  <div class="col-config-title">显示列</div>
-                  <label v-for="col in allColumns" :key="col.key" class="col-toggle">
-                    <input type="checkbox" v-model="col.visible" />
-                    <span>{{ col.label }}</span>
-                  </label>
-                </div>
-              </div>
-              <!-- Export -->
-              <button class="toolbar-btn" @click="exportCurrentPage" title="导出当前页">
-                📥 导出
-              </button>
-            </div>
-          </div>
-        </div>
-
         <!-- ========== TABLE or CHART or LOADING or EMPTY ========== -->
         <Transition name="content-fade">
         <div>
