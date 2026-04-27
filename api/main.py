@@ -260,7 +260,6 @@ def overview(
         "query": query,
         "size": 0,
         "aggs": {
-            "total_docs": {"value_count": {"field": "price"}},
             "provinces": {"cardinality": {"field": "province"}},
             "cities": {"cardinality": {"field": "city"}},
             "avg_price": {"avg": {"field": "price"}},
@@ -276,11 +275,15 @@ def overview(
         }
     }
     try:
+        # 用 _count API 获取真实总数
+        total_result = es.count(index=ES_INDEX, body={"query": query})
+        total_docs = total_result["count"]
+
         result = es.search(index=ES_INDEX, body=body)
         aggs = result["aggregations"]
         province_buckets = aggs["by_province"]["buckets"]
         return {
-            "total_docs": int(aggs["total_docs"]["value"]),
+            "total_docs": total_docs,
             "total_provinces": aggs["provinces"]["value"],
             "total_cities": aggs["cities"]["value"],
             "avg_price": round(aggs["avg_price"]["value"], 2) if aggs["avg_price"]["value"] else 0,
@@ -358,10 +361,6 @@ def filter_options():
                 }
             }
         })
-        unit_agg = es.search(index=ES_INDEX, size=0, aggs={
-            "units": {"terms": {"field": "unit", "size": 50, "order": {"_count": "desc"}}}
-        })
-
         # Build flat city + county lists with parent linkage
         city_list = []
         county_list = []
@@ -384,7 +383,6 @@ def filter_options():
             "cities": city_list,
             "counties": county_list,
             "provinceCityMap": province_city_map,
-            "units": [{"key": b["key"], "count": b["doc_count"]} for b in unit_agg["aggregations"]["units"]["buckets"] if b["key"]],
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

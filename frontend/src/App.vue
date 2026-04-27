@@ -32,90 +32,94 @@
       </div>
     </header>
 
-    <!-- ========== MAIN LAYOUT ========== -->
-    <div class="main-layout">
+    <!-- Filter Bar (full-width, above main content) -->
+    <div class="filter-bar">
+      <input
+        class="filter-bar-input"
+        v-model="searchKeyword"
+        placeholder="🔍 产品名称 / 关键词"
+        @keyup.enter="doSearch()"
+        @input="onKeywordInput"
+      />
+      <CustomSelect
+        v-model="searchProvince"
+        :options="overview.by_province.map(p => ({ key: p.province, count: p.count }))"
+        placeholder="全部省份"
+        class="filter-bar-select"
+        @change="() => { onProvinceChange(); doSearch(); }"
+      />
+      <div class="filter-bar-history" v-if="searchHistory.length && !searchKeyword">
+        <span
+          v-for="h in searchHistory.slice(0,6)"
+          :key="h"
+          class="history-chip"
+          @click="searchKeyword = h; doSearch()"
+        >{{ h }}</span>
+      </div>
+      <button class="btn-more" @click="showDrawer = true">更多筛选 ▸</button>
+    </div>
 
-      <!-- LEFT: Filter Sidebar -->
-      <aside class="filter-sidebar">
-        <div class="sidebar-section">
-          <div class="sidebar-section-title">🔍 筛选条件</div>
+    <!-- Active Filter Tags -->
+    <div class="filter-tags" v-if="searchKeyword || searchProvince || searchCity || searchCounty">
+      <span class="filter-tag" v-if="searchKeyword">
+        <strong>产品名称</strong>
+        <em>{{ searchKeyword }}</em>
+        <span class="tag-remove" @click="searchKeyword = ''; doSearch()">✕</span>
+      </span>
+      <span class="filter-tag" v-if="searchProvince">
+        <strong>省份</strong>
+        <em>{{ searchProvince }}</em>
+        <span class="tag-remove" @click="searchProvince = ''; searchCity = ''; searchCounty = ''; doSearch()">✕</span>
+      </span>
+      <span class="filter-tag" v-if="searchCity">
+        <strong>城市</strong>
+        <em>{{ searchCity }}</em>
+        <span class="tag-remove" @click="searchCity = ''; searchCounty = ''; doSearch()">✕</span>
+      </span>
+      <span class="filter-tag" v-if="searchCounty">
+        <strong>区县</strong>
+        <em>{{ searchCounty }}</em>
+        <span class="tag-remove" @click="searchCounty = ''; doSearch()">✕</span>
+      </span>
+      <span class="filter-tag-clear" @click="resetSearch">清空全部</span>
+    </div>
 
-          <!-- 模式一：顶部快速筛选 -->
-          <div class="filter-group">
-            <label class="filter-label">产品名称</label>
-            <input
-              class="filter-input"
-              v-model="searchKeyword"
-              placeholder="🔍 产品名称 / 关键词"
-              @keyup.enter="doSearch()"
-              @input="onKeywordInput"
-            />
-          </div>
-          <!-- 省份 -->
-          <div class="filter-group">
-            <label class="filter-label">省份</label>
-            <CustomSelect
-              v-model="searchProvince"
-              :options="overview.by_province.map(p => ({ key: p.province, count: p.count }))"
-              placeholder="全部省份"
-              @change="() => { onProvinceChange(); doSearch(); }"
-            />
-          </div>
-
-          <!-- 最近搜索 -->
-          <div class="filter-group">
-            <label class="filter-label">最近搜索</label>
-            <div class="search-history" v-if="searchHistory.length && !searchKeyword">
-              <span
-                v-for="h in searchHistory"
-                :key="h"
-                class="history-chip"
-                @click="searchKeyword = h; doSearch()"
-              >{{ h }}</span>
+    <!-- Filter Drawer (slide-in from right) -->
+      <Transition name="drawer">
+        <div class="drawer-overlay" v-if="showDrawer" @click.self="showDrawer = false">
+          <div class="drawer">
+            <div class="drawer-header">
+              <span>更多筛选</span>
+              <span class="drawer-close" @click="showDrawer = false">✕</span>
             </div>
-          </div>
-
-          <!-- 模式二：高级筛选折叠区 -->
-          <div class="advanced-filter-toggle" @click="showAdvanced = !showAdvanced">
-            <span>🛠️ 高级筛选</span>
-            <span class="toggle-arrow" :class="{ open: showAdvanced }">▼</span>
-          </div>
-
-          <!-- Advanced filters (collapsible) -->
-          <div class="advanced-filters" v-show="showAdvanced">
-            <!-- City -->
-            <div class="filter-group">
-              <label class="filter-label">城市</label>
-              <CustomSelect
-                v-model="searchCity"
-                :options="filteredCities.map(c => ({ key: c.key, count: c.count }))"
-                :disabled="!searchProvince"
-                placeholder="全部城市"
-                :searchable="true"
-              />
+            <div class="drawer-body">
+              <div class="filter-group">
+                <label class="filter-label">城市</label>
+                <CustomSelect
+                  v-model="searchCity"
+                  :options="filteredCities.map(c => ({ key: c.key, count: c.count }))"
+                  :disabled="!searchProvince"
+                  placeholder="全部城市"
+                  :searchable="true"
+                />
+              </div>
+              <div class="filter-group">
+                <label class="filter-label">区县</label>
+                <CustomSelect
+                  v-model="searchCounty"
+                  :options="filteredCounties.map(c => ({ key: c.key, count: c.count }))"
+                  placeholder="全部区县"
+                  :searchable="true"
+                />
+              </div>
             </div>
-
-            <!-- County -->
-            <div class="filter-group">
-              <label class="filter-label">区县</label>
-              <CustomSelect
-                v-model="searchCounty"
-                :options="filteredCounties.map(c => ({ key: c.key, count: c.count }))"
-                placeholder="全部区县"
-                :searchable="true"
-              />
+            <div class="drawer-footer">
+              <button class="btn-primary" @click="() => { showDrawer = false; doSearch(); }">🔍 确定</button>
+              <button class="btn-ghost" @click="resetSearch">重置</button>
             </div>
-
-  
-          </div>
-
-          <!-- Actions -->
-          <div class="filter-actions">
-            <button class="btn-primary" @click="doSearch()">🔍 搜索</button>
-            <button class="btn-ghost" @click="resetSearch">重置</button>
           </div>
         </div>
-      </aside>
+      </Transition>
 
       <!-- RIGHT: Content Area -->
       <main class="content-area">
@@ -272,28 +276,12 @@
 
         <!-- ========== Chart View (shares same area as table) ========== -->
         <div v-else class="content-card chart-view">
-          <div class="change-boards" v-if="changeData.length">
-            <div class="change-board gainers">
-              <div class="change-board-title">📈 涨幅榜</div>
-              <div class="change-item" v-for="item in topGainers" :key="item.breed">
-                <span class="change-breed">{{ item.breed }}</span>
-                <span class="change-pct up">+{{ item.change_pct }}%</span>
-              </div>
-            </div>
-            <div class="change-board losers">
-              <div class="change-board-title">📉 跌幅榜</div>
-              <div class="change-item" v-for="item in topLosers" :key="item.breed">
-                <span class="change-breed">{{ item.breed }}</span>
-                <span class="change-pct down">{{ item.change_pct }}%</span>
-              </div>
-            </div>
-          </div>
-          <div class="change-boards-caption">涨幅/跌幅榜 = 近两期（本月 vs 上月）均价变化率，红色数字为品种价格波动幅度排名</div>
+          <div id="changeChart" style="width:100%;height:340px;"></div>
+          <div class="change-boards-caption">涨幅/跌幅榜 = 近两期（本月 vs 上月）均价变化率，取变化率绝对值最大的10个品种</div>
         </div>
         </Transition>
       </main>
     </div>
-  </div>
 
   <!-- Toast -->
   <div v-if="toast.show" class="toast">{{ toast.msg }}</div>
@@ -727,6 +715,7 @@ import * as echarts from 'echarts'
 
 const showChartView = ref(false)
 const showAdvanced = ref(false)
+const showDrawer = ref(false)
 const quickPricePreset = ref('')
 
 const quickPriceOptions = [
@@ -751,6 +740,7 @@ const trendData = ref([])
 
 const changeData = ref([])
 const trendChartIns = ref(null)
+const changeChartIns = ref(null)
 
 async function loadChartData(force) {
   // force=true means user switched to chart view — always reload
@@ -771,6 +761,7 @@ async function loadChartData(force) {
     changeData.value = change.data || []
     await nextTick()
     renderTrendChart()
+    renderChangeChart()
   } catch (e) {
     console.warn('chart load error:', e)
   }
@@ -796,10 +787,85 @@ function renderTrendChart() {
       { name: '数量', type: 'bar', data: trendData.value.map(d => d.count), color: 'rgba(52,211,153,0.6)', yAxisIndex: 1, barMaxWidth: 14 }
     ]
   }, true)
-  window.addEventListener('resize', () => trendChartIns.value?.resize())
+  window.addEventListener('resize', () => { trendChartIns.value?.resize(); changeChartIns.value?.resize() })
 }
 
 
 const topGainers = computed(() => (changeData.value || []).filter(x => x.change_pct > 0).slice(0, 10))
+function renderChangeChart() {
+  const el = document.getElementById('changeChart')
+  if (!el || !changeData.value.length) return
+  if (changeChartIns.value) { changeChartIns.value.dispose(); changeChartIns.value = null }
+  const chart = markRaw(echarts.init(el))
+  changeChartIns.value = chart
+
+  const allItems = [...changeData.value]
+    .filter(x => x.change_pct !== undefined && x.change_pct !== null)
+    .sort((a, b) => Math.abs(b.change_pct) - Math.abs(a.change_pct))
+    .slice(0, 10)
+
+  const gainers = allItems.filter(x => x.change_pct > 0)
+  const losers = allItems.filter(x => x.change_pct < 0)
+  const labels = allItems.map(x => x.breed)
+  const gainerData = gainers.map(x => x.change_pct)
+  const loserData = losers.map(x => x.change_pct)
+  // pad losers to same length
+  const paddedLoser = [...Array(labels.length).fill(null)]
+  const paddedGainer = [...Array(labels.length).fill(null)]
+  gainers.forEach((g, i) => { paddedGainer[i] = g.change_pct })
+  losers.forEach((l, i) => { paddedLoser[i] = l.change_pct })
+
+  chart.setOption({
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: '#1a2332',
+      borderColor: '#1e3a5f',
+      textStyle: { color: '#e2e8f0', fontSize: 12 },
+      formatter: params => {
+        const p = params.find(q => q.value !== null && q.value !== undefined)
+        if (!p) return ''
+        const item = allItems[p.dataIndex]
+        return `<b>${item.breed}</b><br/>变化率: <b style="color:${item.change_pct >= 0 ? '#34d399' : '#f87171'}">${item.change_pct >= 0 ? '+' : ''}${item.change_pct}%</b><br/>上期均价: <b>¥${item.last_price?.toLocaleString() || '-'}</b><br/>本期均价: <b>¥${item.cur_price?.toLocaleString() || '-'}</b>`
+      }
+    },
+    legend: { data: ['涨幅', '跌幅'], bottom: 0, textStyle: { color: '#94a3b8', fontSize: 10 } },
+    grid: { left: '3%', right: '8%', bottom: '18%', top: '8%', containLabel: true },
+    xAxis: { type: 'category', data: labels, axisLabel: { color: '#94a3b8', fontSize: 10, rotate: 30 }, axisLine: { lineStyle: { color: '#1e3a5f' } }, axisTick: { show: false } },
+    yAxis: {
+      name: '变化率(%)',
+      nameTextStyle: { color: '#64748b', fontSize: 9 },
+      type: 'value',
+      axisLabel: { color: '#64748b', fontSize: 9, formatter: v => (v >= 0 ? '+' : '') + v + '%' },
+      splitLine: { lineStyle: { color: '#1e3a5f', type: 'dashed' } },
+      axisLine: { lineStyle: { color: '#1e3a5f' } },
+    },
+    series: [
+      {
+        name: '涨幅',
+        type: 'line',
+        data: paddedGainer,
+        smooth: 0.3,
+        color: '#34d399',
+        symbol: 'circle',
+        symbolSize: 6,
+        lineStyle: { width: 2 },
+        connectNulls: false,
+      },
+      {
+        name: '跌幅',
+        type: 'line',
+        data: paddedLoser,
+        smooth: 0.3,
+        color: '#f87171',
+        symbol: 'circle',
+        symbolSize: 6,
+        lineStyle: { width: 2 },
+        connectNulls: false,
+      },
+    ],
+  }, true)
+  window.addEventListener('resize', () => changeChartIns.value?.resize())
+}
+
 const topLosers = computed(() => (changeData.value || []).filter(x => x.change_pct < 0).sort((a, b) => a.change_pct - b.change_pct).slice(0, 10))
 </script>
