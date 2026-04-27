@@ -409,7 +409,7 @@ body {
 .table-count { font-size: 13px; color: var(--text-2); }
 .table-count strong { color: var(--primary); font-weight: 700; }
 
-.table-scroll { overflow-x: auto; }
+.table-scroll { overflow-x: scroll; }
 
 .result-table {
   width: 100%;
@@ -462,7 +462,7 @@ body {
   text-align: center;
 }
 
-.result-table td:first-child { font-weight: 600; color: var(--text); text-align: center; }
+.result-table td:first-child { font-weight: 600; color: var(--text); text-align: center; position: sticky; left: 0; z-index: 2; background: inherit; }
 
 /* 价格列居中 */
 .result-table td.price-cell { white-space: nowrap; vertical-align: top; padding-top: 10px !important; text-align: center; }
@@ -760,6 +760,16 @@ body {
 }
 
 /* === Toolbar === */
+
+/* Toolbar wrapper (provides content-card look) */
+.toolbar-wrap {
+  background: linear-gradient(135deg, #ffffff, #f7faff);
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  margin-bottom: 0;
+}
+
 .toolbar {
   display: flex;
   align-items: center;
@@ -1034,6 +1044,9 @@ body {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   flex-wrap: wrap;
+  overflow: visible;
+  min-width: 0;
+  align-content: flex-start;
 }
 .filter-bar-input {
   flex: 1;
@@ -1049,8 +1062,8 @@ body {
   transition: border-color 0.15s;
 }
 .filter-bar-input:focus { border-color: var(--primary); }
-.filter-bar-select { width: 160px; flex-shrink: 0; }
-.filter-bar-history { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.filter-bar-select { width: 150px; flex-shrink: 0; }
+.filter-bar-history { display: flex; gap: 6px; flex-wrap: nowrap; align-items: center; overflow: hidden; }
 .history-chip {
   padding: 3px 10px;
   border-radius: 12px;
@@ -1123,10 +1136,11 @@ body {
 
 /* Responsive */
 @media (max-width: 768px) {
-  .filter-bar { padding: 8px 12px; gap: 8px; }
-  .filter-bar-input { min-width: 120px; }
-  .filter-bar-select { width: 130px; }
+  .filter-bar { padding: 8px 12px; gap: 8px; overflow-x: auto; }
+  .filter-bar-input { min-width: 140px; max-width: 200px; }
+  .filter-bar-select { width: 130px; flex-shrink: 0; }
   .filter-bar-history { display: none; }
+  .search-history-bar { display: none; }
   .drawer { width: 85vw; }
 }
 
@@ -1135,10 +1149,8 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 16px;
-  background: var(--surface-2);
-  border-bottom: 1px solid var(--border);
   flex-wrap: wrap;
+  overflow: visible;
 }
 .filter-tag {
   display: inline-flex;
@@ -1193,3 +1205,15 @@ body {
   opacity: 0.6;
 }
 .history-clear:hover { opacity: 1; }
+
+/* Search history bar */
+.search-history-bar {
+  display: flex;
+  gap: 8px;
+  padding: 6px 16px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: nowrap;
+  overflow: hidden;
+  align-items: center;
+}

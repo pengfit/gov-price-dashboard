@@ -48,41 +48,43 @@
         class="filter-bar-select"
         @change="() => { onProvinceChange(); doSearch(); }"
       />
-      <div class="filter-bar-history" v-if="searchHistory.length && !searchKeyword">
-        <span
-          v-for="h in searchHistory.slice(0,6)"
-          :key="h"
-          class="history-chip"
-          @click="searchKeyword = h; doSearch()"
-        >{{ h }}</span>
-        <span class="history-clear" @click="clearHistory()">清空历史</span>
-      </div>
       <button class="btn-more" @click="showDrawer = true">更多筛选 ▸</button>
+
+      <!-- Active Filter Tags (inside filter-bar) -->
+      <div class="filter-tags" v-if="searchKeyword || searchProvince || searchCity || searchCounty">
+        <span class="filter-tag" v-if="searchKeyword">
+          <strong>产品名称</strong>
+          <em>{{ searchKeyword }}</em>
+          <span class="tag-remove" @click="searchKeyword = ''; doSearch()">✕</span>
+        </span>
+        <span class="filter-tag" v-if="searchProvince">
+          <strong>省份</strong>
+          <em>{{ searchProvince }}</em>
+          <span class="tag-remove" @click="searchProvince = ''; searchCity = ''; searchCounty = ''; doSearch()">✕</span>
+        </span>
+        <span class="filter-tag" v-if="searchCity">
+          <strong>城市</strong>
+          <em>{{ searchCity }}</em>
+          <span class="tag-remove" @click="searchCity = ''; searchCounty = ''; doSearch()">✕</span>
+        </span>
+        <span class="filter-tag" v-if="searchCounty">
+          <strong>区县</strong>
+          <em>{{ searchCounty }}</em>
+          <span class="tag-remove" @click="searchCounty = ''; doSearch()">✕</span>
+        </span>
+        <span class="filter-tag-clear" @click="resetSearch">清空全部</span>
+      </div>
     </div>
 
-    <!-- Active Filter Tags -->
-    <div class="filter-tags" v-if="searchKeyword || searchProvince || searchCity || searchCounty">
-      <span class="filter-tag" v-if="searchKeyword">
-        <strong>产品名称</strong>
-        <em>{{ searchKeyword }}</em>
-        <span class="tag-remove" @click="searchKeyword = ''; doSearch()">✕</span>
-      </span>
-      <span class="filter-tag" v-if="searchProvince">
-        <strong>省份</strong>
-        <em>{{ searchProvince }}</em>
-        <span class="tag-remove" @click="searchProvince = ''; searchCity = ''; searchCounty = ''; doSearch()">✕</span>
-      </span>
-      <span class="filter-tag" v-if="searchCity">
-        <strong>城市</strong>
-        <em>{{ searchCity }}</em>
-        <span class="tag-remove" @click="searchCity = ''; searchCounty = ''; doSearch()">✕</span>
-      </span>
-      <span class="filter-tag" v-if="searchCounty">
-        <strong>区县</strong>
-        <em>{{ searchCounty }}</em>
-        <span class="tag-remove" @click="searchCounty = ''; doSearch()">✕</span>
-      </span>
-      <span class="filter-tag-clear" @click="resetSearch">清空全部</span>
+    <!-- Search History -->
+    <div class="search-history-bar" v-if="searchHistory.length && !searchKeyword">
+      <span
+        v-for="h in searchHistory.slice(0,8)"
+        :key="h"
+        class="history-chip"
+        @click="searchKeyword = h; doSearch()"
+      >{{ h }}</span>
+      <span class="history-clear" @click="clearHistory()">清空历史</span>
     </div>
 
     <!-- Filter Drawer (slide-in from right) -->
@@ -125,42 +127,46 @@
       <!-- RIGHT: Content Area -->
       <main class="content-area">
 
-        <!-- Toolbar -->
-        <div class="toolbar" v-if="searchResult.data && searchResult.data.length">
-          <div class="toolbar-left">
-            <span class="table-count">
-              <strong>{{ pageStart }}‑{{ pageEnd }}</strong>
-              / {{ searchResult.total?.toLocaleString() }} 条
-            </span>
-          </div>
-          <div class="toolbar-right">
-            <!-- View toggle -->
-            <div class="view-tabs">
-              <button class="view-tab" :class="{ active: !showChartView }" @click="showChartView = false">📋 列表</button>
-              <button class="view-tab" :class="{ active: showChartView }" @click="showChartView = true; loadChartData(true)">📈 图表</button>
+        <!-- Toolbar (standalone, outside Transition) -->
+        <div class="toolbar-wrap" v-if="searchResult.data && searchResult.data.length">
+          <div class="toolbar">
+            <div class="toolbar-left">
+              <span class="table-count">
+                <strong>{{ pageStart }}‑{{ pageEnd }}</strong>
+                / {{ searchResult.total?.toLocaleString() }} 条
+              </span>
             </div>
-            <!-- Column config -->
-            <div class="col-config-wrap" ref="colConfigRef">
-              <button class="toolbar-btn" @click="toggleColConfig" title="列配置">
-                📋 列
-              </button>
-              <div class="col-config-dropdown" v-if="showColConfig">
-                <div class="col-config-title">显示列</div>
-                <label v-for="col in allColumns" :key="col.key" class="col-toggle">
-                  <input type="checkbox" v-model="col.visible" />
-                  <span>{{ col.label }}</span>
-                </label>
+            <div class="toolbar-right">
+              <!-- View toggle -->
+              <div class="view-tabs">
+                <button class="view-tab" :class="{ active: !showChartView }" @click="showChartView = false">📋 列表</button>
+                <button class="view-tab" :class="{ active: showChartView }" @click="showChartView = true; loadChartData(true)">📈 图表</button>
               </div>
+              <!-- Column config -->
+              <div class="col-config-wrap" ref="colConfigRef">
+                <button class="toolbar-btn" @click="toggleColConfig" title="列配置">
+                  📋 列
+                </button>
+                <div class="col-config-dropdown" v-if="showColConfig">
+                  <div class="col-config-title">显示列</div>
+                  <label v-for="col in allColumns" :key="col.key" class="col-toggle">
+                    <input type="checkbox" v-model="col.visible" />
+                    <span>{{ col.label }}</span>
+                  </label>
+                </div>
+              </div>
+              <!-- Export -->
+              <button class="toolbar-btn" @click="exportCurrentPage" title="导出当前页">
+                📥 导出
+              </button>
             </div>
-            <!-- Export -->
-            <button class="toolbar-btn" @click="exportCurrentPage" title="导出当前页">
-              📥 导出
-            </button>
           </div>
         </div>
 
         <!-- ========== TABLE or CHART or LOADING or EMPTY ========== -->
         <Transition name="content-fade">
+        <div>
+
         <!-- Skeleton loading (rows inside table wrapper) -->
         <div class="content-card" v-if="loading">
           <div class="skeleton-header">
@@ -279,6 +285,7 @@
         <div v-else class="content-card chart-view">
           <div id="changeChart" style="width:100%;height:340px;"></div>
           <div class="change-boards-caption">涨幅/跌幅榜 = 近两期（本月 vs 上月）均价变化率，取变化率绝对值最大的10个品种</div>
+        </div>
         </div>
         </Transition>
       </main>
