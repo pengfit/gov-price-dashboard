@@ -55,6 +55,7 @@
           class="history-chip"
           @click="searchKeyword = h; doSearch()"
         >{{ h }}</span>
+        <span class="history-clear" @click="clearHistory()">清空历史</span>
       </div>
       <button class="btn-more" @click="showDrawer = true">更多筛选 ▸</button>
     </div>
@@ -594,6 +595,11 @@ function isStale(dateStr) {
 }
 
 function onKeywordInput() {}
+
+function clearHistory() {
+  searchHistory.value = []
+  window.localStorage.removeItem('gov_price_history')
+}
 
 function isPresetActive(preset) {
   return priceMin.value === preset.min && priceMax.value === preset.max
