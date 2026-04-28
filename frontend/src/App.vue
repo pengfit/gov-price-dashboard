@@ -3,7 +3,10 @@
 
     <!-- ========== TOP BAR ========== -->
     <header class="top-bar">
-      <div class="top-bar-left"></div>
+      <div class="top-bar-left">
+        <button class="nav-tab" :class="{ active: curTab === 'list' }" @click="curTab = 'list'">📋 产品列表</button>
+        <button class="nav-tab" :class="{ active: curTab === 'dist' }" @click="curTab = 'dist'">📊 数据分布</button>
+      </div>
       <div class="top-bar-meta">
         <span class="meta-item">
           <span class="meta-label">数据总量</span>
@@ -25,6 +28,7 @@
     </header>
 
     <!-- Filter Bar (full-width, above main content) -->
+    <template v-if="curTab === 'list'">
     <div class="filter-bar">
       <input
         class="filter-bar-input"
@@ -250,7 +254,17 @@
         </div>
         </Transition>
       </main>
-    </div>
+    </template>
+
+    <!-- Distribution page -->
+    <template v-if="curTab === 'dist'">
+      <DistributionChart
+        :keyword="searchKeyword"
+        :province="searchProvince"
+        :city="searchCity"
+      />
+    </template>
+  </div>
 
   <!-- Toast -->
   <div v-if="toast.show" class="toast">{{ toast.msg }}</div>
@@ -260,12 +274,14 @@
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import axios from 'axios'
 import CustomSelect from './components/CustomSelect.vue'
+import DistributionChart from './components/DistributionChart.vue'
 
 const API = 'http://localhost:5200/api'
 
 // ============================================================
 // STATE
 // ============================================================
+const curTab = ref('list')
 const overview = ref({ total_docs: 0, total_provinces: 0, total_cities: 0, avg_price: 0, max_price: 0, min_price: 0, by_province: [] })
 const searchKeyword = ref('')
 const searchProvince = ref('')
