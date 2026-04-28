@@ -8,21 +8,25 @@
 
     <!-- Chart cards -->
     <div class="dist-cards">
-      <div class="dist-card chart-card">
+      <div class="dist-card chart-card wide">
         <div class="card-title">价格区间分布</div>
         <div id="rangeBarChart" style="width:100%;height:280px;"></div>
-      </div>
-
-      <div class="dist-card chart-card">
-        <div class="card-title">价格占比（饼图）</div>
-        <div id="rangePieChart" style="width:100%;height:280px;"></div>
       </div>
     </div>
 
     <div class="dist-cards">
-      <div class="dist-card chart-card wide">
-        <div class="card-title">省份-价格热力图</div>
-        <div id="provinceHeatChart" style="width:100%;height:300px;"></div>
+      <div class="dist-card chart-card wide" style="min-height:640px;">
+        <div class="card-title">各省价格分布</div>
+        <div class="province-chart-grid">
+          <div
+            v-for="p in provinceData"
+            :key="p.province"
+            class="province-chart-cell"
+          >
+            <div class="province-chart-title">{{ p.province }}</div>
+            <div :id="'provinceChart_' + p.province" class="province-chart-box"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -35,7 +39,6 @@
             <th>价格区间</th>
             <th>产品数量</th>
             <th>占比</th>
-            <th>区间均价</th>
           </tr>
         </thead>
         <tbody>
@@ -48,43 +51,7 @@
                 <span class="pct-label">{{ getPct(item.count) }}%</span>
               </div>
             </td>
-            <td>¥{{ item.avg_price?.toLocaleString() || '—' }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
 
-    <!-- Province distribution -->
-    <div class="dist-card table-card">
-      <div class="card-title">省份产品分布 Top 20</div>
-      <table class="dist-table">
-        <thead>
-          <tr>
-            <th>省份</th>
-            <th>产品数量</th>
-            <th>均价</th>
-            <th>价格分布</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="item in provinceData" :key="item.province">
-            <td>
-              <span class="province-dot" :style="{ background: getProvinceColor(item.province) }"></span>
-              {{ item.province }}
-            </td>
-            <td>{{ item.count.toLocaleString() }}</td>
-            <td>¥{{ item.avg_price?.toLocaleString() || '—' }}</td>
-            <td>
-              <div class="mini-bars">
-                <div
-                  v-for="r in item.ranges"
-                  :key="r.range"
-                  class="mini-bar-seg"
-                  :style="{ width: getRangePct(r.count, item.count) + '%', background: getRangeColor(r.range) }"
-                  :title="`${r.range}: ${r.count}`"
-                ></div>
-              </div>
-            </td>
           </tr>
         </tbody>
       </table>
@@ -96,10 +63,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, watch, onUnmounted } from 'vue'
 import axios from 'axios'
 import { markRaw } from 'vue'
 import * as echarts from 'echarts'
+
+onUnmounted(() => {
+  mountedRef.value = false
+  rangeBarIns.value?.dispose()
+  
+})
 
 const props = defineProps({
   keyword: { type: String, default: '' },
@@ -113,17 +86,14 @@ const error = ref('')
 const rangeData = ref([])
 const provinceData = ref([])
 const rangeBarIns = ref(null)
-const rangePieIns = ref(null)
 const provinceHeatIns = ref(null)
+const mountedRef = ref(true)
 
-const RANGE_COLORS = {
-  '0-500':   '#60a5fa',
-  '500-2k':  '#34d399',
-  '2k-5k':   '#a78bfa',
-  '5k-1万':  '#f59e0b',
-  '1万-5万': '#f87171',
-  '>5万':    '#e879f9',
-}
+watch(() => [props.province, props.city], () => {
+  if (mountedRef.value) loadData()
+}, { deep: true })
+
+const RANGE_COLORS = ['#6dd5ed','#4facfe','#6a85f5','#9b59b6','#a78bfa','#f59e0b','#f97316','#ef4444','#e11d48']
 
 const PROVINCE_COLORS = {
   '辽宁': '#4a90d9', '江苏': '#50c5a8', '新疆': '#f5a623', '陕西': '#e85555',
@@ -142,7 +112,8 @@ function getProvinceColor(p) {
 }
 
 function getRangeColor(range) {
-  return RANGE_COLORS[range] || '#94a3b8'
+  const idx = rangeData.value.findIndex(r => r.range === range)
+  return idx >= 0 ? RANGE_COLORS[idx] : '#94a3b8'
 }
 
 const totalCount = ref(0)
@@ -209,9 +180,9 @@ async function loadData() {
     }
 
     await nextTick()
+    await new Promise(r => setTimeout(r, 50))
     renderRangeBar()
-    renderRangePie()
-    renderProvinceHeat()
+    renderProvinceCharts()
   } catch (e) {
     error.value = '加载失败：' + (e.message || '网络错误')
   } finally {
@@ -245,7 +216,7 @@ function renderRangeBar() {
     grid: { left: '3%', right: '4%', bottom: '12%', top: '8%', containLabel: true },
     xAxis: {
       type: 'category', data: labels,
-      axisLabel: { color: '#94a3b8', fontSize: 11, rotate: 0 },
+      axisLabel: { color: '#94a3b8', fontSize: 10, rotate: 40, interval: 0 },
       axisLine: { lineStyle: { color: '#1e3a5f' } },
       axisTick: { show: false }
     },
@@ -268,95 +239,62 @@ function renderRangeBar() {
   }, true)
   window.addEventListener('resize', () => {
     rangeBarIns.value?.resize()
-    rangePieIns.value?.resize()
     provinceHeatIns.value?.resize()
   })
 }
 
-function renderRangePie() {
-  const el = document.getElementById('rangePieChart')
-  if (!el || !rangeData.value.length) return
-  if (rangePieIns.value) { rangePieIns.value.dispose(); rangePieIns.value = null }
-  const chart = markRaw(echarts.init(el))
-  rangePieIns.value = chart
+function renderProvinceCharts() {
+  provinceData.value.forEach((p) => {
+    const el = document.getElementById('provinceChart_' + p.province)
+    if (!el) return
+    const chart = markRaw(echarts.init(el))
+    const validRanges = p.ranges.filter(r => r.count)
+    if (!validRanges.length) return
 
-  const sorted = [...rangeData.value].filter(r => r.count > 0)
-  chart.setOption({
-    tooltip: {
-      backgroundColor: '#1a2332', borderColor: '#1e3a5f',
-      textStyle: { color: '#e2e8f0', fontSize: 12 },
-      formatter: p => `<b>${p.name}</b><br/>数量: <b>${p.value.toLocaleString()}</b><br/>占比: <b>${p.percent.toFixed(1)}%</b>`
-    },
-    legend: { bottom: 0, textStyle: { color: '#94a3b8', fontSize: 10 }, itemWidth: 10, itemHeight: 10 },
-    series: [{
-      type: 'pie', radius: ['35%', '65%'],
-      data: sorted.map(r => ({ name: r.range, value: r.count })),
-      itemStyle: { borderRadius: 4, borderColor: '#0f172a', borderWidth: 2 },
-      label: { color: '#94a3b8', fontSize: 10, formatter: '{b}: {d}%' },
-      labelLine: { lineStyle: { color: '#1e3a5f' } },
-    }],
-  }, true)
-}
-
-function renderProvinceHeat() {
-  const el = document.getElementById('provinceHeatChart')
-  if (!el || !provinceData.value.length) return
-  if (provinceHeatIns.value) { provinceHeatIns.value.dispose(); provinceHeatIns.value = null }
-  const chart = markRaw(echarts.init(el))
-  provinceHeatIns.value = chart
-
-  // Build price-range matrix per province
-  const rangeLabels = rangeData.value.map(r => r.range)
-  const provinces = provinceData.value.map(p => p.province)
-
-  // Build matrix: for each province, find count per range
-  const matrix = provinceData.value.map(p => {
-    return rangeLabels.map(r => {
-      const found = p.ranges?.find(x => x.range === r)
-      return found ? found.count : 0
+    const labels = validRanges.map(r => r.range)
+    const values = validRanges.map(r => r.count)
+    const colors = validRanges.map(r => {
+      const idx = rangeData.value.findIndex(rng => rng.range === r.range)
+      return RANGE_COLORS[idx] || '#94a3b8'
     })
+
+    chart.setOption({
+      backgroundColor: 'transparent',
+      grid: { left: '4%', right: '4%', bottom: '18%', top: '10%', containLabel: true },
+      tooltip: {
+        backgroundColor: '#1a2332', borderColor: '#1e3a5f',
+        textStyle: { color: '#e2e8f0', fontSize: 10 },
+        formatter: p => `<b>${p.name}</b><br/>数量: <b style="color:#3b9eff">${p.value.toLocaleString()}</b>`
+      },
+      xAxis: {
+        type: 'category',
+        data: labels,
+        axisLabel: { color: '#94a3b8', fontSize: 8, rotate: 30, interval: 0 },
+        axisLine: { lineStyle: { color: '#1e3a5f' } },
+        axisTick: { show: false },
+      },
+      yAxis: {
+        type: 'value', show: false,
+        splitLine: { show: false }
+      },
+      series: [{
+        type: 'bar',
+        data: values,
+        colorBy: 'data',
+        itemStyle: { color: (p) => colors[p.dataIndex], borderRadius: [2, 2, 0, 0] },
+        barMaxWidth: 28,
+        label: {
+          show: true, position: 'top',
+          color: '#94a3b8', fontSize: 8,
+          formatter: p => p.value >= 1000 ? (p.value/1000).toFixed(0)+'k' : p.value
+        }
+      }],
+    })
+    setTimeout(() => chart.resize(), 60)
   })
-
-  // Also compute avg_price per province for tooltip
-  const avgPrices = provinceData.value.map(p => p.avg_price)
-
-  chart.setOption({
-    tooltip: {
-      backgroundColor: '#1a2332', borderColor: '#1e3a5f',
-      textStyle: { color: '#e2e8f0', fontSize: 11 },
-      formatter: p => {
-        const prov = provinces[p.data1]
-        const rng = rangeLabels[p.data2]
-        const provData = provinceData.value[p.data1]
-        return `<b>${prov}</b> / ${rng}<br/>数量: <b style="color:#3b9eff">${p.value}</b><br/>均价: <b>¥${(provData?.avg_price || 0).toLocaleString()}</b>`
-      }
-    },
-    grid: { left: '2%', right: '2%', bottom: '20%', top: '2%', containLabel: true },
-    xAxis: { type: 'category', data: rangeLabels, axisLabel: { color: '#94a3b8', fontSize: 10, rotate: 30 }, axisLine: { lineStyle: { color: '#1e3a5f' } }, axisTick: { show: false } },
-    yAxis: { type: 'category', data: provinces, axisLabel: { color: '#94a3b8', fontSize: 10 }, axisLine: { lineStyle: { color: '#1e3a5f' } }, axisTick: { show: false } },
-    visualMap: {
-      min: 0,
-      max: Math.max(...matrix.flat(), 1),
-      text: ['高', '低'],
-      textStyle: { color: '#94a3b8', fontSize: 10 },
-      inRange: { color: ['#1a2332', '#1e3a5f', '#3b9eff', '#34d399', '#f59e0b', '#f87171'] },
-      calculable: true,
-      bottom: 0,
-      left: 0,
-      itemWidth: 12,
-      itemHeight: 100,
-    },
-    series: [{
-      type: 'heatmap',
-      data: matrix.flatMap((row, ri) => row.map((v, ci) => [ci, ri, v])),
-      label: { show: true, color: '#e2e8f0', fontSize: 9, formatter: p => p.value > 0 ? p.value : '' },
-      itemStyle: { borderRadius: 2, borderColor: '#0f172a', borderWidth: 1 },
-      emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(59,158,255,0.5)' } }
-    }],
-  }, true)
 }
 
-onMounted(loadData)
+onMounted(() => { mountedRef.value = true; loadData() })
 </script>
 
 <style scoped>
@@ -487,6 +425,37 @@ onMounted(loadData)
   height: 100%;
   min-width: 2px;
   transition: width 0.3s;
+}
+
+.province-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.province-chart-cell {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.province-chart-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.province-chart-box {
+  width: 100%;
+  height: 160px;
 }
 
 .dist-loading, .dist-error {

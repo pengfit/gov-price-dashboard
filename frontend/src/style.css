@@ -66,15 +66,26 @@ body {
    TOP BAR
    ============================================================ */
 .top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 20px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: var(--shadow);
+  padding: 0 24px;
+  background: var(--primary);
+  height: 56px;
   margin-bottom: 14px;
+  border-radius: 0;
+  box-shadow: none;
+  border-bottom: 2px solid rgba(255,255,255,0.3);
+}
+
+.dashboard {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0;
+  min-height: 100vh;
 }
 
 .top-bar-left {
@@ -84,12 +95,7 @@ body {
   flex: 0 0 auto;
 }
 
-.top-bar-center {
-  display: flex;
-  align-items: center;
-  flex: 1 1 auto;
-  justify-content: center;
-}
+
 
 .top-bar-logo {
   font-size: 22px;
@@ -105,28 +111,29 @@ body {
 .top-bar-meta {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 12px;
-  color: var(--text-2);
+  gap: 16px;
+  font-size: 13px;
+  color: rgba(255,255,255,0.8);
   flex: 0 0 auto;
 }
 
 .meta-item {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
 
-.meta-label { color: var(--text-3); }
+.meta-label { color: rgba(255,255,255,0.55); font-size: 12px; }
 
 .meta-value {
-  font-weight: 700;
+  font-weight: 800;
   font-family: 'DIN Alternate', 'Helvetica Neue', Arial, sans-serif;
-  color: var(--primary);
-  font-size: 14px;
+  color: #ffffff;
+  font-size: 15px;
+  letter-spacing: 0.3px;
 }
 
-.meta-sep { color: var(--border); font-size: 16px; }
+.meta-sep { color: rgba(255,255,255,0.35); font-size: 16px; }
 
 /* ============================================================
    MAIN LAYOUT: Sidebar + Content
@@ -1224,31 +1231,45 @@ body {
 .top-bar-left {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 0;
   flex: 0 0 auto;
 }
 
 .nav-tab {
-  padding: 6px 18px;
-  border-radius: 20px;
-  border: 1px solid transparent;
-  background: var(--surface-2);
-  color: var(--text-2);
-  font-size: 13px;
+  padding: 5px 20px;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.75);
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
   font-family: inherit;
-  margin: 0 2px;
+  letter-spacing: 0.3px;
+  height: 56px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tab-icon-img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  display: inline-block;
 }
 
 .nav-tab:hover {
-  background: var(--primary-dim);
-  color: var(--primary-dark);
+  color: #fff;
+  background: rgba(255,255,255,0.1);
 }
 
 .nav-tab.active {
-  background: var(--primary);
-  color: #fff;
-  box-shadow: 0 2px 6px rgba(22,119,255,0.3);
+  background: rgba(255,255,255,0.12);
+  color: #ffffff;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  box-shadow: inset 0 -3px 0 #ffffff;
 }

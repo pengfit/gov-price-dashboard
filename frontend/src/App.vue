@@ -4,8 +4,8 @@
     <!-- ========== TOP BAR ========== -->
     <header class="top-bar">
       <div class="top-bar-left">
-        <button class="nav-tab" :class="{ active: curTab === 'list' }" @click="curTab = 'list'">📋 产品列表</button>
-        <button class="nav-tab" :class="{ active: curTab === 'dist' }" @click="curTab = 'dist'">📊 数据分布</button>
+        <button class="nav-tab" :class="{ active: curTab === 'list' }" @click="curTab = 'list'"><img src="/img/tab-list.png" class="tab-icon-img" /> 产品列表</button>
+        <button class="nav-tab" :class="{ active: curTab === 'dist' }" @click="curTab = 'dist'"><img src="/img/tab-dist.png" class="tab-icon-img" /> 数据分布</button>
       </div>
       <div class="top-bar-meta">
         <span class="meta-item">
