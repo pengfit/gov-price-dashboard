@@ -479,9 +479,13 @@ def price_distribution(
     city: Optional[str] = Query(None),
     keyword: Optional[str] = Query(None),
     unit: Optional[str] = Query(None),
+    category: Optional[str] = Query(None),
 ):
     must_clauses = []
     filter_clauses = []
+
+    if category:
+        filter_clauses.append({"term": {"category": category}})
 
     if keyword:
         kw_len = len(keyword)
@@ -522,15 +526,17 @@ def price_distribution(
                 "range": {
                     "field": "price",
                     "ranges": [
-                        {"key": "0-100",      "from": 0,       "to": 100},
-                        {"key": "100-500",    "from": 100,     "to": 500},
-                        {"key": "500-1k",     "from": 500,     "to": 1000},
-                        {"key": "1k-2k",      "from": 1000,    "to": 2000},
-                        {"key": "2k-5k",      "from": 2000,    "to": 5000},
-                        {"key": "5k-1万",     "from": 5000,    "to": 10000},
-                        {"key": "1万-3万",    "from": 10000,   "to": 30000},
-                        {"key": "3万-10万",   "from": 30000,   "to": 100000},
-                        {"key": ">10万",      "from": 100000},
+                        {"key": "50-100",     "from": 50,      "to": 100},
+                        {"key": "100-200",    "from": 100,     "to": 200},
+                        {"key": "200-500",    "from": 200,     "to": 500},
+                        {"key": "500-700",    "from": 500,     "to": 700},
+                        {"key": "700-1000",   "from": 700,     "to": 1000},
+                        {"key": "1000-2000",  "from": 1000,    "to": 2000},
+                        {"key": "2000-3000",  "from": 2000,    "to": 3000},
+                        {"key": "3000-4000",  "from": 3000,    "to": 4000},
+                        {"key": "4000-5000",  "from": 4000,    "to": 5000},
+                        {"key": ">5000",      "from": 5000},
+
                     ]
                 },
                 "aggs": {
@@ -551,6 +557,227 @@ def price_distribution(
                 }
                 for b in buckets
             ]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/stats/categories")
+def stats_categories(size: int = Query(100, ge=1, le=500)):
+    """返回所有产品类别及数据量"""
+    try:
+        body = {
+            "size": 0,
+            "aggs": {
+                "categories": {
+                    "terms": {"field": "category", "size": size}
+                }
+            }
+        }
+        result = es.search(index=ES_INDEX, body=body)
+        buckets = result["aggregations"]["categories"]["buckets"]
+        return {
+            "data": [
+                {"key": b["key"], "count": b["doc_count"]}
+                for b in buckets
+            ]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/stats/category-detail")
+def stats_category_detail(
+    category: str = Query(...),
+    province_limit: int = Query(20, ge=1, le=50),
+    breed_limit: int = Query(20, ge=1, le=100),
+):
+    """返回指定类别的省份分布、热门品种"""
+    try:
+        # Province + breed + price stats in one query
+        body = {
+            "query": {"term": {"category": category}},
+            "size": 0,
+            "aggs": {
+                "avg_price": {"avg": {"field": "price"}},
+                "max_price": {"max": {"field": "price"}},
+                "provinces": {
+                    "terms": {"field": "province", "size": province_limit}
+                },
+                "breeds": {
+                    "terms": {"field": "breed.keyword", "size": breed_limit},
+                    "aggs": {
+                        "spec": {"terms": {"field": "spec.keyword", "size": 1}},
+                        "province": {"terms": {"field": "province", "size": 1}},
+                        "avg_price": {"avg": {"field": "price"}}
+                    }
+                }
+            }
+        }
+        result = es.search(index=ES_INDEX, body=body)
+        aggs = result["aggregations"]
+
+        provinces = [
+            {"key": b["key"], "count": b["doc_count"]}
+            for b in aggs["provinces"]["buckets"]
+        ]
+
+        breeds = [
+            {
+                "key": b["key"],
+                "count": b["doc_count"],
+                "spec": b["spec"]["buckets"][0]["key"] if b["spec"]["buckets"] else "",
+                "province": b["province"]["buckets"][0]["key"] if b["province"]["buckets"] else "",
+                "avg_price": round(b["avg_price"]["value"], 2) if b["avg_price"]["value"] else 0,
+            }
+            for b in aggs["breeds"]["buckets"]
+        ]
+
+        return {
+            "data": {
+                "avg_price": round(aggs["avg_price"]["value"], 2) if aggs["avg_price"]["value"] else 0,
+                "max_price": round(aggs["max_price"]["value"], 2) if aggs["max_price"]["value"] else 0,
+                "provinces": provinces,
+                "breeds": breeds,
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/stats/category-price-ranges")
+def category_price_ranges(category: str = Query(...)):
+    """返回指定类别的动态价格区间，按分位数分为5段，每段覆盖约20%数据"""
+    try:
+        # Get percentiles to build equal-frequency ranges
+        stats_body = {
+            "query": {"term": {"category": category}},
+            "size": 0,
+            "aggs": {
+                "min_price": {"min": {"field": "price"}},
+                "max_price": {"max": {"field": "price"}},
+                "avg_price": {"avg": {"field": "price"}},
+                "price_percentiles": {
+                    "percentiles": {
+                        "field": "price",
+                        "percents": [15, 35, 50, 65, 85]
+                    }
+                }
+            }
+        }
+        stats_result = es.search(index=ES_INDEX, body=stats_body)
+        aggs = stats_result["aggregations"]
+        min_p = aggs["min_price"]["value"] or 0
+        max_p = aggs["max_price"]["value"] or 0
+        avg_p = aggs["avg_price"]["value"] or 0
+
+        if max_p <= 0:
+            return {"data": [], "stats": {"min": 0, "max": 0, "avg": 0}}
+
+        vals = aggs["price_percentiles"]["values"]
+        def pct(key):
+            key_str = str(key)
+            key_float = float(key)
+            if key_str in vals:
+                return float(vals[key_str])
+            for k, v in vals.items():
+                if abs(float(k) - key_float) < 0.01:
+                    return float(v)
+            raise KeyError(key)
+        t1 = pct(15.0)
+        t2 = pct(35.0)
+        t3 = pct(50.0)
+        t4 = pct(65.0)
+        t5 = pct(85.0)
+
+        def round100(v): return float(round(v / 100) * 100)
+
+        r0 = min_p
+        r1 = round100(t1)
+        r2 = round100(t2)
+        r3 = round100(t3)
+        r4 = round100(t4)
+        r5 = round100(t5)
+        r6 = max_p
+
+        # Avoid zero-width or inverted ranges
+        if r1 <= r0: r1 = r0 + 100
+        if r2 <= r1: r2 = r1 + 100
+        if r3 <= r2: r3 = r2 + 100
+        if r4 <= r3: r4 = r3 + 100
+        if r5 <= r4: r5 = r4 + 100
+
+        def fmt(lo, hi):
+            def k_str(v):
+                if v >= 10000:
+                    return f"{int(v/1000)}k"
+                elif v >= 1000:
+                    if v % 1000 == 0:
+                        return f"{int(v/1000)}k"
+                    return str(int(v))
+                else:
+                    return str(int(v))
+            return f"{k_str(lo)}-{k_str(hi)}"
+
+        def fmt_single(v):
+            if v >= 10000:
+                return f"{int(v/1000)}k"
+            elif v >= 1000:
+                if v % 1000 == 0:
+                    return f"{int(v/1000)}k"
+                return str(int(v))
+            else:
+                return str(int(v))
+
+        ranges_config = [
+            {"key": "远低于均价", "from": r0, "to": r1},
+            {"key": "低于均价",   "from": r1,  "to": r2},
+            {"key": "接近均价",   "from": r2,  "to": r3},
+            {"key": "高于均价",   "from": r3,  "to": r4},
+            {"key": "远高于均价", "from": r4,  "to": r5 + 1},
+        ]
+
+        body = {
+            "query": {"term": {"category": category}},
+            "size": 0,
+            "aggs": {
+                "ranges": {
+                    "range": {
+                        "field": "price",
+                        "ranges": ranges_config
+                    },
+                    "aggs": {
+                        "avg_price": {"avg": {"field": "price"}}
+                    }
+                }
+            }
+        }
+        result = es.search(index=ES_INDEX, body=body)
+        buckets = result["aggregations"]["ranges"]["buckets"]
+
+        data = []
+        for b in buckets:
+            from_val = b["from"]
+            to_val = b["to"]
+            is_last = (b["key"] == "远高于均价")
+            if is_last:
+                label = "> " + fmt_single(from_val)
+            else:
+                label = fmt(from_val, to_val)
+            data.append({
+                "range": label,
+                "desc": b["key"],
+                "count": b["doc_count"],
+                "avg_price": round(b["avg_price"]["value"], 2) if b["avg_price"]["value"] else 0,
+            })
+
+        return {
+            "data": data,
+            "stats": {
+                "min": round(min_p, 2),
+                "max": round(max_p, 2),
+                "avg": round(avg_p, 2),
+            }
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

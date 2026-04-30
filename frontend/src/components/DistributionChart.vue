@@ -93,7 +93,7 @@ watch(() => [props.province, props.city], () => {
   if (mountedRef.value) loadData()
 }, { deep: true })
 
-const RANGE_COLORS = ['#6dd5ed','#4facfe','#6a85f5','#9b59b6','#a78bfa','#f59e0b','#f97316','#ef4444','#e11d48']
+const RANGE_COLORS = ['#6dd5ed','#4facfe','#6a85f5','#9b59b6','#a78bfa','#f59e0b','#f97316','#ef4444','#e11d48','#06b6d4']
 
 const PROVINCE_COLORS = {
   '辽宁': '#4a90d9', '江苏': '#50c5a8', '新疆': '#f5a623', '陕西': '#e85555',
@@ -131,14 +131,9 @@ async function loadData() {
   loading.value = true
   error.value = ''
   try {
-    const params = {}
-    if (props.keyword) params.keyword = props.keyword
-    if (props.province) params.province = props.province
-    if (props.city) params.city = props.city
-
     const [distRes, provRes] = await Promise.all([
-      axios.get(`${API}/stats/price-distribution`, { params }),
-      axios.get(`${API}/stats/overview`, { params }),
+      axios.get(`${API}/stats/price-distribution`),
+      axios.get(`${API}/stats/overview`),
     ])
 
     rangeData.value = distRes.data?.data || []
@@ -155,29 +150,23 @@ async function loadData() {
         ranges: []
       }))
 
-    // Load range breakdown per province
-    if (props.province) {
-      // already filtered, no extra call needed
-    } else {
-      // fetch range breakdown per province via filter-options + price-distribution
-      // Use parallel fetch with each province as filter
-      const provNames = provinceData.value.map(p => p.province)
-      const rangeBreakdown = await Promise.all(
-        provNames.map(prov =>
-          axios.get(`${API}/stats/price-distribution`, {
-            params: { ...params, province: prov }
-          }).then(r => ({ prov, ranges: r.data?.data || [] }))
-          .catch(() => ({ prov, ranges: [] }))
-        )
+    // Load range breakdown per province (always, independent of product-list filters)
+    const provNames = provinceData.value.map(p => p.province)
+    const rangeBreakdown = await Promise.all(
+      provNames.map(prov =>
+        axios.get(`${API}/stats/price-distribution`, {
+          params: { province: prov }
+        }).then(r => ({ prov, ranges: r.data?.data || [] }))
+        .catch(() => ({ prov, ranges: [] }))
       )
-      const rangeMap = {}
-      rangeBreakdown.forEach(({ prov, ranges }) => {
-        rangeMap[prov] = ranges
-      })
-      provinceData.value.forEach(p => {
-        p.ranges = rangeMap[p.province] || []
-      })
-    }
+    )
+    const rangeMap = {}
+    rangeBreakdown.forEach(({ prov, ranges }) => {
+      rangeMap[prov] = ranges
+    })
+    provinceData.value.forEach(p => {
+      p.ranges = rangeMap[p.province] || []
+    })
 
     await nextTick()
     await new Promise(r => setTimeout(r, 50))
